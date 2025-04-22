@@ -1,2 +1,5 @@
 # Ignore all folders starting with a dot
 .*/
+
+# Ignore build folder
+build/
