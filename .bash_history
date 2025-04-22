@@ -34,3 +34,8 @@ cd ..
 ls
 cd s2312237
 tar -czvf s2312237.tar.gz ./
+git add .
+     git commit -m "Initial commit"
+     git push -u origin master
+     git commit -m "Initial commit"
+   git pull origin master

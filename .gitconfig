@@ -1,3 +1,7 @@
 [user]
 	email = KamiuKamew@github.com
 	name = KamiuKamew
+[http]
+	proxy = http://proxyserver:port
+[https]
+	proxy = http://proxyserver:port
