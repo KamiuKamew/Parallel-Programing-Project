@@ -1,6 +1,6 @@
+#include <cstring>
 #include <iostream>
 #include <string>
-#include <cstring>
 
 using namespace std;
 
@@ -55,28 +55,32 @@ typedef unsigned int bit32;
 // 定义了一系列MD5中的具体函数
 // 这五个计算函数（ROTATELEFT/FF/GG/HH/II）和之前的FGHI一样，都是需要你进行SIMD并行化的
 // 但是你需要注意的是#define的功能及其效果，可以发现这里的FGHI是没有返回值的，为什么呢？你可以查询#define的含义和用法
-#define ROTATELEFT(num, n) (((num) << (n)) | ((num) >> (32-(n))))
+#define ROTATELEFT(num, n) (((num) << (n)) | ((num) >> (32 - (n))))
 
-#define FF(a, b, c, d, x, s, ac) { \
-  (a) += F ((b), (c), (d)) + (x) + ac; \
-  (a) = ROTATELEFT ((a), (s)); \
-  (a) += (b); \
-}
+#define FF(a, b, c, d, x, s, ac)                                               \
+  {                                                                            \
+    (a) += F((b), (c), (d)) + (x) + ac;                                        \
+    (a) = ROTATELEFT((a), (s));                                                \
+    (a) += (b);                                                                \
+  }
 
-#define GG(a, b, c, d, x, s, ac) { \
-  (a) += G ((b), (c), (d)) + (x) + ac; \
-  (a) = ROTATELEFT ((a), (s)); \
-  (a) += (b); \
-}
-#define HH(a, b, c, d, x, s, ac) { \
-  (a) += H ((b), (c), (d)) + (x) + ac; \
-  (a) = ROTATELEFT ((a), (s)); \
-  (a) += (b); \
-}
-#define II(a, b, c, d, x, s, ac) { \
-  (a) += I ((b), (c), (d)) + (x) + ac; \
-  (a) = ROTATELEFT ((a), (s)); \
-  (a) += (b); \
-}
+#define GG(a, b, c, d, x, s, ac)                                               \
+  {                                                                            \
+    (a) += G((b), (c), (d)) + (x) + ac;                                        \
+    (a) = ROTATELEFT((a), (s));                                                \
+    (a) += (b);                                                                \
+  }
+#define HH(a, b, c, d, x, s, ac)                                               \
+  {                                                                            \
+    (a) += H((b), (c), (d)) + (x) + ac;                                        \
+    (a) = ROTATELEFT((a), (s));                                                \
+    (a) += (b);                                                                \
+  }
+#define II(a, b, c, d, x, s, ac)                                               \
+  {                                                                            \
+    (a) += I((b), (c), (d)) + (x) + ac;                                        \
+    (a) = ROTATELEFT((a), (s));                                                \
+    (a) += (b);                                                                \
+  }
 
 void MD5Hash(string input, bit32 *state);
