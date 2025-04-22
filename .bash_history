@@ -39,3 +39,33 @@ git add .
      git push -u origin master
      git commit -m "Initial commit"
    git pull origin master
+Merge branch 'master' of https://github.com/KamiuKamew/Parallel-Programing-Project
+git
+     git config --global http.proxy http://proxyserver:port
+     git config --global https.proxy http://proxyserver:port
+     git remote set-url origin git@github.com:KamiuKamew/Parallel-Programing-Project.git
+   ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+     ls -la ~/.ssh
+     ssh-keygen -t rsa -b 4096 -C "kamiukamew@github.com"
+   ssh -T git@github.com
+     cat s2312237.pub
+     cat ~/.ssh/id_rsa.pub
+ssh -T git@github.com
+git config --global user.name
+git config --global user.email
+git config --global user.name
+git config --global user.email
+git remote -v
+git credential-osxkeychain get
+ssh -T git@github.com
+ls -al ~/.ssh
+cat ~/.ssh/id_rsa.pubssh -T git@github.com
+ssh -T git@github.com
+ls
+cd ..
+cd s2312237
+ls
+cd src
+ls
+cd ..
+exit
