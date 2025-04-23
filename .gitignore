@@ -3,3 +3,8 @@
 
 # Ignore build folder
 build/
+
+*/main
+*/test.o
+*/test.e
+*.out

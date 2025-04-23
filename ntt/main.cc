@@ -5,7 +5,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sys/time.h>
-#include <omp.h>
+// #include <omp.h>
 // 可以自行添加需要的头文件
 
 void fRead(int *a, int *b, int *n, int *p, int input_id){
@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
         long double ans = 0;
         int n_, p_;
         fRead(a, b, &n_, &p_, i);
+        memset(ab, 0, sizeof(ab));
         auto Start = std::chrono::high_resolution_clock::now();
         // TODO : 将 poly_multiply 函数替换成你写的 ntt
         poly_multiply(a, b, ab, n_, p_);

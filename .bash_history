@@ -69,3 +69,34 @@ cd src
 ls
 cd ..
 exit
+squeue
+cd original
+cd ntt
+qsub qsub.sh
+qstat
+cd .. ..
+cd ..
+cd ntt
+qsub qsub.sh
+qstat
+bash test.sh 1 1
+cd ..
+cd ann
+bash test.sh 1 1
+cd ..
+ls
+cd s2313212
+bash src/qsub.sh
+bash src/test.sh
+bash src/test.sh 1 1
+cd src
+bash test.sh 1 1
+cd ..
+cd original
+cd ntt
+bash test.sh 1 1
+bash test.sh 1 2
+bash test.sh 2 2
+bash test.sh a a
+bash test.sh 1 1
+squeue
