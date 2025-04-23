@@ -8,3 +8,5 @@ build/
 */test.o
 */test.e
 *.out
+
+output/
