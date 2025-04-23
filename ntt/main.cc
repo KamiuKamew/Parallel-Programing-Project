@@ -1,3 +1,5 @@
+#include "src/include/ntt.h"
+
 #include <chrono>
 #include <cstring>
 #include <fstream>
@@ -6,7 +8,6 @@
 #include <string>
 #include <sys/time.h>
 // #include <omp.h>
-// 可以自行添加需要的头文件
 
 void fRead(int *a, int *b, int *n, int *p, int input_id) {
   // 数据输入函数
@@ -93,6 +94,7 @@ int main(int argc, char *argv[]) {
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     poly_multiply(a, b, ab, n_, p_);
+    // poly_multiply_ntt(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;

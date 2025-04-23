@@ -100,3 +100,15 @@ bash test.sh 2 2
 bash test.sh a a
 bash test.sh 1 1
 squeue
+git check-ignore -v ntt/files/0.out ntt/files/1.out
+git status
+git check-ignore -v ntt/files/0.out ntt/files/1.out
+git update-index --refresh && git status
+git status
+git ls-files ntt/files/0.out ntt/files/1.out
+git rm --cached ntt/files/0.out ntt/files/1.out
+git status
+cd ntt
+bash test.sh 1 1
+cd ntt
+bash test.sh 1 1

@@ -4,9 +4,9 @@
 # Ignore build folder
 build/
 
-*/main
-*/test.o
-*/test.e
-*.out
+ntt/main
+ntt/test.o
+ntt/test.e
+ntt/files/*.out
 
 output/
