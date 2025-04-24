@@ -95,21 +95,8 @@ void ntt_forward(u32 *a, u32 n, u32 p, u32 omega) {
  * @param omega 原根
  */
 void ntt_inverse(u32 *a, u32 n, u32 p, u32 omega) {
-  bit_reverse_permute(a, n);
-
   u32 inv_root = mod_inv(omega, p);
-  for (u32 mid = 1; mid < n; mid <<= 1) {
-    u32 Wn = mod_pow(inv_root, (p - 1) / (mid << 1), p);
-    for (u32 j = 0; j < n; j += (mid << 1)) {
-      u32 w = 1;
-      for (u32 k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
-        u32 x = a[j + k];
-        u32 y = mod_mul(w, a[j + k + mid], p);
-        a[j + k] = mod_add(x, y, p);
-        a[j + k + mid] = mod_sub(x, y, p);
-      }
-    }
-  }
+  ntt_forward(a,n,p,inv_root);
 
   // 最后每个元素乘以 n 的逆元
   u32 inv_n = mod_inv(n, p);
