@@ -7,16 +7,62 @@
 - [并行程序设计实验报告](#并行程序设计实验报告)
   - [目录](#目录)
   - [前置任务](#前置任务)
+    - [实现串行迭代 NTT](#实现串行迭代-ntt)
+      - [`bit_reverse_permute`](#bit_reverse_permute)
+      - [`ntt_forward`](#ntt_forward)
+      - [`ntt_inverse`](#ntt_inverse)
+      - [`poly_multiply_ntt`](#poly_multiply_ntt)
+    - [分析各函数并行化难度](#分析各函数并行化难度)
+    - [初步并行化](#初步并行化)
   - [基础要求](#基础要求)
   - [进阶要求](#进阶要求)
 
 ## 前置任务
 
-在开始对 NTT 算法进行 SIMD 优化之前，我们首先需要用 C++ 实现正确的串行迭代 NTT。为此，我们实现了三个头文件：
+在前置任务中，我们首先实现了**串行迭代** NTT；随后，我们初步探索了 Arm NEON 技术，对用到的函数进行逐个分析，判断其**并行化难度**；最后，我们对其中较为简便的方法进行了**初步并行化**。
+
+### 实现串行迭代 NTT
+
+在开始对 NTT 算法进行 SIMD 优化之前，我们首先需要用 C++ 实现正确的串行迭代 NTT。为此，我们实现了三个头文件`op.h`、`transform.h`和`ntt.h`，各个头文件及其包含的函数如下：
 
 - `op.h`：基本的模运算（加、减、乘、快速幂、数论倒数）
+  - `mod_add`, `mod_sub`, `mod_mul`：简单的加减乘法。其中乘法使用`1LL * ...`来扩大位数避免溢出。
+  - `mod_pow`：基于快速幂实现的模 p 幂运算。此处不针对快速幂算法展开。
+  - `mod_inv`：基于费马小定理（如果 \( m \) 是质数且 \( a \not\equiv 0 \pmod{m} \)，则 \( a^{-1} \equiv a^{m-2} \pmod{m} \)）实现的模 p 倒数。
 - `transform.h`：辅助操作（扩展向量长度到 2 的幂次）、NTT 正反变换
+  - `expand_n`, `expand_a`：扩展数组长度到 2 的幂次、根据扩展后的长度**安全地**扩展向量。
+  - `bit_reverse_permute`：对给定的向量进行 bit-reverse 置换。此处我们**相信**向量的长度是 2 的幂次。
+  - `ntt_forward`, `ntt_inverse`：NTT 正变换与逆变换。
 - `ntt.h`：使用 NTT 的多项式乘积运算
+  - `poly_multiply_ntt`：使用 NTT 进行多项式乘法。
+
+我们就`bit_reverse_permute`、`ntt_forward`、`ntt_inverse`和`poly_multiply_ntt`的实现进行简要阐述：
+
+#### `bit_reverse_permute`
+
+<!-- TODO -->
+
+#### `ntt_forward`
+
+<!-- TODO -->
+
+#### `ntt_inverse`
+
+<!-- TODO -->
+
+#### `poly_multiply_ntt`
+
+<!-- TODO -->
+
+### 分析各函数并行化难度
+
+在串行迭代算法实现后，我们首先简要了解 Arm NEON 的基本用法，并据此分析各个函数的并行化难度。
+
+Arm NEON 是<!-- TODO -->。它的基本思想是<!-- TODO -->。例如，基本类型为<!-- TODO -->，表示<!-- TODO -->。因此，我们可以用<!-- TODO -->来<!-- TODO -->。
+
+类似地，我们
+
+### 初步并行化
 
 随后，我们初步使用 Neon 指令集对蝶形运算过程中的加法和减法等简易的部分进行向量化。为此，我们
 

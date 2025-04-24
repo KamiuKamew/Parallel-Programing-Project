@@ -1,0 +1,32 @@
+#include "../include/ntt.h"
+
+#include <iostream>
+
+int a[] = {1, 7, 8, 4, 0, 0, 0, 0};
+int b[] = {2, 2, 7, 9, 0, 0, 0, 0};
+int ab_ntt_simd[8], ab_ntt[8];
+
+int main() {
+  poly_multiply_ntt_simd(a, b, ab_ntt_simd, 8, 998244353);
+  poly_multiply_ntt(a, b, ab_ntt, 8, 998244353);
+
+  std::cout << "ntt_simd: ";
+  for (int i = 0; i < 8; ++i) {
+    std::cout << ab_ntt_simd[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "ntt:   ";
+  for (int i = 0; i < 8; ++i) {
+    std::cout << ab_ntt[i] << " ";
+  }
+  std::cout << std::endl;
+
+  for (int i = 0; i < 8; ++i) {
+    if (ab_ntt_simd[i] != ab_ntt[i]) {
+      std::cout << "Test failed" << std::endl;
+      return 1;
+    }
+  }
+  std::cout << "Test passed" << std::endl;
+}
