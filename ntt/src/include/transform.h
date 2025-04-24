@@ -1,7 +1,7 @@
 #pragma once
 
-#include "type.h"
 #include "op.h"
+#include "type.h"
 
 /** 将 n 扩展为 2 的幂。 */
 u32 expand_n(u32 n) {
@@ -95,12 +95,8 @@ void ntt_forward(u32 *a, u32 n, u32 p, u32 omega) {
  * @param omega 原根
  */
 void ntt_inverse(u32 *a, u32 n, u32 p, u32 omega) {
-  u32 inv_root = mod_inv(omega, p);
-  ntt_forward(a,n,p,inv_root);
-
-  // 最后每个元素乘以 n 的逆元
-  u32 inv_n = mod_inv(n, p);
-  for (u32 i = 0; i < n; ++i) {
-    a[i] = mod_mul(a[i], inv_n, p);
-  }
+  ntt_forward(a, n, p, mod_inv(omega, p));
+  int inv_n = mod_inv(n, p);
+  for (u32 i = 0; i < n; ++i)
+    a[i] = mod_mul(a[i], inv_n, p); // 最后每个元素乘以 n 的逆元
 }

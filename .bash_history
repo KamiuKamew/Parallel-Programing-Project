@@ -126,3 +126,17 @@ cp --help
 pwd
 cp -r /nttdata/* /home/s2312237/*
 cp -r /nttdata/* /home/s2312237/
+cd ntt && ls -la src/ | cat
+cd ntt && cat src/main.cpp 2>/dev/null || echo "File does not exist"
+cd ntt && find . -name "*.cpp" | cat
+find . -name "*.cpp" | cat
+cd ntt && g++ -E -o /dev/null src/include/op.h -I./src/include 2>&1 | cat
+g++ -E -o /dev/null ntt/src/include/op.h -Intt/src/include 2>&1 | cat
+pwd && ls -la | grep ntt | cat
+cd .. && ls -la | grep ntt | cat
+cd ntt && ls -la src/include/type.h | cat
+cd ntt && cat src/include/type.h | cat
+cat ntt/src/include/type.h | cat
+pwd && ls src/include | cat
+cat src/include/type.h | cat
+g++ -c -o /dev/null src/include/op.h 2>&1 | cat
