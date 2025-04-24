@@ -1,16 +1,14 @@
 #include "../include/ntt.h"
 
-#include <cstring>
 #include <iostream>
 
-int main() {
-  int a[] = {1, 2, 3, 4, 0, 0, 0, 0};
-  int b[] = {1, 2, 3, 4, 0, 0, 0, 0};
-  int ab_naive[8] = {0};
-  poly_multiply_naive(a, b, ab_naive, 8, 998244353);
+int a[] = {1, 5, 5, 4, 0, 0, 0, 0};
+int b[] = {4, 1, 5, 2, 0, 0, 0, 0};
+int ab_naive[8], ab_ntt[8];
 
-  int ab_ntt[8] = {0};
-  poly_multiply_ntt(a, b, ab_ntt, 8, 998244353);
+int main() {
+  poly_multiply_naive(a, b, ab_naive, 4, 998244353);
+  poly_multiply_ntt(a, b, ab_ntt, 4, 998244353);
 
   std::cout << "naive: ";
   for (int i = 0; i < 8; ++i) {
@@ -18,7 +16,7 @@ int main() {
   }
   std::cout << std::endl;
 
-  std::cout << "ntt: ";
+  std::cout << "ntt:   ";
   for (int i = 0; i < 8; ++i) {
     std::cout << ab_ntt[i] << " ";
   }

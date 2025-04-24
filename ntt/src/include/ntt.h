@@ -3,7 +3,7 @@
 #include "op.h"
 #include "transform.h"
 
-#define PRIMITIVE_ROOT 3 // 998244353 的原根
+#define OMEGA 3 // 998244353 的原根
 
 /**
  * @brief 输入两个多项式系数（模 mod）
@@ -22,12 +22,12 @@
  * @param p 模数（质数）
  */
 void poly_multiply_ntt(int *a, int *b, int *ab, int n, int p) {
-  ntt_forward(a, n, p, PRIMITIVE_ROOT);
-  ntt_forward(b, n, p, PRIMITIVE_ROOT);
+  ntt_forward(a, n, p, OMEGA);
+  ntt_forward(b, n, p, OMEGA);
   for (int i = 0; i < n; ++i) {
     ab[i] = mod_mul(a[i], b[i], p);
   }
-  ntt_inverse(ab, n, p, PRIMITIVE_ROOT);
+  ntt_inverse(ab, n, p, OMEGA);
 }
 
 void poly_multiply_naive(int *a, int *b, int *ab, int n, int p) {

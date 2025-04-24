@@ -34,22 +34,22 @@ void bit_reverse_permute(int *a, int n) {
  * 进行就地变换是缓存友好的。
  *
  * @param a 多项式系数，变换后表示频域系数
- * @param limit 多项式长度
- * @param mod 模数
- * @param primitive_root 原根
+ * @param n 多项式长度
+ * @param p 模数
+ * @param omega 原根
  */
-void ntt_forward(int *a, int limit, int mod, int primitive_root) {
-  bit_reverse_permute(a, limit); // 注意 limit 一定是 2 的幂
+void ntt_forward(int *a, int n, int p, int omega) {
+  bit_reverse_permute(a, n); // 注意 n 一定是 2 的幂
 
-  for (int mid = 1; mid < limit; mid <<= 1) {
-    int Wn = mod_pow(primitive_root, (mod - 1) / (mid << 1), mod);
-    for (int j = 0; j < limit; j += (mid << 1)) {
+  for (int mid = 1; mid < n; mid <<= 1) {
+    int Wn = mod_pow(omega, (p - 1) / (mid << 1), p);
+    for (int j = 0; j < n; j += (mid << 1)) {
       int w = 1;
-      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, mod)) {
+      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
         int x = a[j + k];
-        int y = mod_mul(w, a[j + k + mid], mod);
-        a[j + k] = mod_add(x, y, mod);
-        a[j + k + mid] = mod_sub(x, y, mod);
+        int y = mod_mul(w, a[j + k + mid], p);
+        a[j + k] = mod_add(x, y, p);
+        a[j + k + mid] = mod_sub(x, y, p);
       }
     }
   }
@@ -59,30 +59,30 @@ void ntt_forward(int *a, int limit, int mod, int primitive_root) {
  * @brief NTT 逆变换：A(ω) → a(x)
  *
  * @param a 频域系数，变换后表示多项式系数
- * @param limit 多项式长度
- * @param mod 模数
- * @param primitive_root 原根
+ * @param n 多项式长度
+ * @param p 模数
+ * @param omega 原根
  */
-void ntt_inverse(int *a, int limit, int mod, int primitive_root) {
-  bit_reverse_permute(a, limit);
+void ntt_inverse(int *a, int n, int p, int omega) {
+  bit_reverse_permute(a, n);
 
-  int inv_root = mod_inv(primitive_root, mod);
-  for (int mid = 1; mid < limit; mid <<= 1) {
-    int Wn = mod_pow(inv_root, (mod - 1) / (mid << 1), mod);
-    for (int j = 0; j < limit; j += (mid << 1)) {
+  int inv_root = mod_inv(omega, p);
+  for (int mid = 1; mid < n; mid <<= 1) {
+    int Wn = mod_pow(inv_root, (p - 1) / (mid << 1), p);
+    for (int j = 0; j < n; j += (mid << 1)) {
       int w = 1;
-      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, mod)) {
+      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
         int x = a[j + k];
-        int y = mod_mul(w, a[j + k + mid], mod);
-        a[j + k] = mod_add(x, y, mod);
-        a[j + k + mid] = mod_sub(x, y, mod);
+        int y = mod_mul(w, a[j + k + mid], p);
+        a[j + k] = mod_add(x, y, p);
+        a[j + k + mid] = mod_sub(x, y, p);
       }
     }
   }
 
   // 最后每个元素乘以 n 的逆元
-  int inv_n = mod_inv(limit, mod);
-  for (int i = 0; i < limit; ++i) {
-    a[i] = mod_mul(a[i], inv_n, mod);
+  int inv_n = mod_inv(n, p);
+  for (int i = 0; i < n; ++i) {
+    a[i] = mod_mul(a[i], inv_n, p);
   }
 }
