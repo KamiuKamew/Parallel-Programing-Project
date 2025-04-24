@@ -1,27 +1,28 @@
 #pragma once
 
+#include "type.h"
 #include "op.h"
 
 /** 将 n 扩展为 2 的幂。 */
-int expand_n(int n) {
-  int lg_n = 0;
+u32 expand_n(u32 n) {
+  u32 lg_n = 0;
   while ((1 << lg_n) < n)
     ++lg_n;
   return 1 << lg_n;
 }
 
 /** 将 a 的长度扩展为 2 的幂。 */
-int *expand_a(int *a, int n, int n_expanded) {
+u32 *expand_a(u32 *a, u32 n, u32 n_expanded) {
   // 虽然但是，这里应该有一个检查n是不是2的幂的逻辑
   // 话又说回来，这样得用别的库
   // 然而我又不想用别的库
   // 所以这里就先不检查了
 
-  int *a_expanded = new int[n_expanded];
-  for (int i = 0; i < n; ++i) {
+  u32 *a_expanded = new u32[n_expanded];
+  for (u32 i = 0; i < n; ++i) {
     a_expanded[i] = a[i];
   }
-  for (int i = n; i < n_expanded; ++i) {
+  for (u32 i = n; i < n_expanded; ++i) {
     a_expanded[i] = 0;
   }
   return a_expanded;
@@ -33,19 +34,19 @@ int *expand_a(int *a, int n, int n_expanded) {
  * @param a 输入序列
  * @param n 序列长度
  */
-void bit_reverse_permute(int *a, int n) {
+void bit_reverse_permute(u32 *a, u32 n) {
   // 虽然但是，这里应该有一个检查n是不是2的幂的逻辑
   // 话又说回来，这样得用别的库
   // 然而我又不想用别的库
   // 所以这里就先不检查了
 
-  int lg_n = 0;
+  u32 lg_n = 0;
   while ((1 << lg_n) < n)
     ++lg_n;
 
-  for (int i = 0; i < n; ++i) {
-    int j = 0;
-    for (int k = 0; k < lg_n; ++k) {
+  for (u32 i = 0; i < n; ++i) {
+    u32 j = 0;
+    for (u32 k = 0; k < lg_n; ++k) {
       if (i & (1 << k)) {
         j |= (1 << (lg_n - 1 - k));
       }
@@ -68,16 +69,16 @@ void bit_reverse_permute(int *a, int n) {
  * @param p 模数
  * @param omega 原根
  */
-void ntt_forward(int *a, int n, int p, int omega) {
+void ntt_forward(u32 *a, u32 n, u32 p, u32 omega) {
   bit_reverse_permute(a, n);
 
-  for (int mid = 1; mid < n; mid <<= 1) {
-    int Wn = mod_pow(omega, (p - 1) / (mid << 1), p);
-    for (int j = 0; j < n; j += (mid << 1)) {
-      int w = 1;
-      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
-        int x = a[j + k];
-        int y = mod_mul(w, a[j + k + mid], p);
+  for (u32 mid = 1; mid < n; mid <<= 1) {
+    u32 Wn = mod_pow(omega, (p - 1) / (mid << 1), p);
+    for (u32 j = 0; j < n; j += (mid << 1)) {
+      u32 w = 1;
+      for (u32 k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
+        u32 x = a[j + k];
+        u32 y = mod_mul(w, a[j + k + mid], p);
         a[j + k] = mod_add(x, y, p);
         a[j + k + mid] = mod_sub(x, y, p);
       }
@@ -93,17 +94,17 @@ void ntt_forward(int *a, int n, int p, int omega) {
  * @param p 模数
  * @param omega 原根
  */
-void ntt_inverse(int *a, int n, int p, int omega) {
+void ntt_inverse(u32 *a, u32 n, u32 p, u32 omega) {
   bit_reverse_permute(a, n);
 
-  int inv_root = mod_inv(omega, p);
-  for (int mid = 1; mid < n; mid <<= 1) {
-    int Wn = mod_pow(inv_root, (p - 1) / (mid << 1), p);
-    for (int j = 0; j < n; j += (mid << 1)) {
-      int w = 1;
-      for (int k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
-        int x = a[j + k];
-        int y = mod_mul(w, a[j + k + mid], p);
+  u32 inv_root = mod_inv(omega, p);
+  for (u32 mid = 1; mid < n; mid <<= 1) {
+    u32 Wn = mod_pow(inv_root, (p - 1) / (mid << 1), p);
+    for (u32 j = 0; j < n; j += (mid << 1)) {
+      u32 w = 1;
+      for (u32 k = 0; k < mid; ++k, w = mod_mul(w, Wn, p)) {
+        u32 x = a[j + k];
+        u32 y = mod_mul(w, a[j + k + mid], p);
         a[j + k] = mod_add(x, y, p);
         a[j + k + mid] = mod_sub(x, y, p);
       }
@@ -111,8 +112,8 @@ void ntt_inverse(int *a, int n, int p, int omega) {
   }
 
   // 最后每个元素乘以 n 的逆元
-  int inv_n = mod_inv(n, p);
-  for (int i = 0; i < n; ++i) {
+  u32 inv_n = mod_inv(n, p);
+  for (u32 i = 0; i < n; ++i) {
     a[i] = mod_mul(a[i], inv_n, p);
   }
 }

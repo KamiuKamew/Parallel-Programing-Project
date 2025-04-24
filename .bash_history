@@ -114,3 +114,15 @@ cd ntt
 bash test.sh 1 1
 cd ntt
 bash test.sh 1 1
+pwd
+cd ntt
+bash test.sh 1 1
+cd ntt
+cd ..
+ls
+cd nttdata
+ls
+cp --help
+pwd
+cp -r /nttdata/* /home/s2312237/*
+cp -r /nttdata/* /home/s2312237/
