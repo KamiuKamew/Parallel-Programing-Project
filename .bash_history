@@ -112,3 +112,5 @@ cd ntt
 bash test.sh 1 1
 cd ntt
 bash test.sh 1 1
+cd ntt
+bash test.sh 1 1
