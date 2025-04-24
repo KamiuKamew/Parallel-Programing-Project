@@ -2,13 +2,43 @@
 
 #include "op.h"
 
+/** 将 n 扩展为 2 的幂。 */
+int expand_n(int n) {
+  int lg_n = 0;
+  while ((1 << lg_n) < n)
+    ++lg_n;
+  return 1 << lg_n;
+}
+
+/** 将 a 的长度扩展为 2 的幂。 */
+int *expand_a(int *a, int n, int n_expanded) {
+  // 虽然但是，这里应该有一个检查n是不是2的幂的逻辑
+  // 话又说回来，这样得用别的库
+  // 然而我又不想用别的库
+  // 所以这里就先不检查了
+
+  int *a_expanded = new int[n_expanded];
+  for (int i = 0; i < n; ++i) {
+    a_expanded[i] = a[i];
+  }
+  for (int i = n; i < n_expanded; ++i) {
+    a_expanded[i] = 0;
+  }
+  return a_expanded;
+}
+
 /**
- * @brief 就地对 a 做 bit-reverse 置换
+ * @brief 就地对 a 做 bit-reverse 置换。
  *
  * @param a 输入序列
  * @param n 序列长度
  */
 void bit_reverse_permute(int *a, int n) {
+  // 虽然但是，这里应该有一个检查n是不是2的幂的逻辑
+  // 话又说回来，这样得用别的库
+  // 然而我又不想用别的库
+  // 所以这里就先不检查了
+
   int lg_n = 0;
   while ((1 << lg_n) < n)
     ++lg_n;
@@ -39,7 +69,7 @@ void bit_reverse_permute(int *a, int n) {
  * @param omega 原根
  */
 void ntt_forward(int *a, int n, int p, int omega) {
-  bit_reverse_permute(a, n); // 注意 n 一定是 2 的幂
+  bit_reverse_permute(a, n);
 
   for (int mid = 1; mid < n; mid <<= 1) {
     int Wn = mod_pow(omega, (p - 1) / (mid << 1), p);

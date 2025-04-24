@@ -6,15 +6,8 @@
 #define OMEGA 3 // 998244353 的原根
 
 /**
- * @brief 输入两个多项式系数（模 mod）
- * 返回多项式卷积结果（模 mod）
+ * @brief 使用NTT优化的多项式乘法
  * 自动补零至 2 的幂，执行 NTT、点乘、逆NTT
- * 内部调用顺序：
- * - root 表构造
- * - NTT 变换（正）
- * - 点乘（可并行）
- * - NTT 变换（逆）
- * - 缩减结果长度
  * @param a 多项式系数
  * @param b 多项式系数
  * @param ab 结果
@@ -22,12 +15,16 @@
  * @param p 模数（质数）
  */
 void poly_multiply_ntt(int *a, int *b, int *ab, int n, int p) {
-  ntt_forward(a, n, p, OMEGA);
-  ntt_forward(b, n, p, OMEGA);
-  for (int i = 0; i < n; ++i) {
-    ab[i] = mod_mul(a[i], b[i], p);
+  int n_expanded = expand_n(2 * n - 1);
+  int *a_expanded = expand_a(a, n, n_expanded);
+  int *b_expanded = expand_a(b, n, n_expanded);
+
+  ntt_forward(a_expanded, n_expanded, p, OMEGA);
+  ntt_forward(b_expanded, n_expanded, p, OMEGA);
+  for (int i = 0; i < n_expanded; ++i) {
+    ab[i] = mod_mul(a_expanded[i], b_expanded[i], p);
   }
-  ntt_inverse(ab, n, p, OMEGA);
+  ntt_inverse(ab, n_expanded, p, OMEGA);
 }
 
 void poly_multiply_naive(int *a, int *b, int *ab, int n, int p) {
