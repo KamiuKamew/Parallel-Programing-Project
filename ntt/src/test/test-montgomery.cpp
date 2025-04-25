@@ -28,7 +28,7 @@ int main()
 
     // 创建普通模运算和Montgomery模运算对象
     Mod normal_mod(mod);
-    Montgomery montgomery(mod);
+    MontMod montgomery(mod);
 
     // 测试基本运算
     std::cout << "===== 测试基本运算 =====" << std::endl;
@@ -36,7 +36,7 @@ int main()
     // 测试 from_u32 和 to_u32
     {
         u32 a = 123456789;
-        u32 mont_a = montgomery.from_u32(a);
+        u32_mont mont_a = montgomery.from_u32(a);
         u32 back_a = montgomery.to_u32(mont_a);
         assert_equal(a, back_a, "转换测试 (a -> Montgomery域 -> a)");
         print_success("转换测试");
@@ -49,9 +49,9 @@ int main()
 
         u32 normal_add = normal_mod.add(a, b);
 
-        u32 mont_a = montgomery.from_u32(a);
-        u32 mont_b = montgomery.from_u32(b);
-        u32 mont_add = montgomery.add(mont_a, mont_b);
+        u32_mont mont_a = montgomery.from_u32(a);
+        u32_mont mont_b = montgomery.from_u32(b);
+        u32_mont mont_add = montgomery.add(mont_a, mont_b);
         u32 result_add = montgomery.to_u32(mont_add);
 
         assert_equal(normal_add, result_add, "加法测试");
@@ -65,9 +65,9 @@ int main()
 
         u32 normal_sub = normal_mod.sub(a, b);
 
-        u32 mont_a = montgomery.from_u32(a);
-        u32 mont_b = montgomery.from_u32(b);
-        u32 mont_sub = montgomery.sub(mont_a, mont_b);
+        u32_mont mont_a = montgomery.from_u32(a);
+        u32_mont mont_b = montgomery.from_u32(b);
+        u32_mont mont_sub = montgomery.sub(mont_a, mont_b);
         u32 result_sub = montgomery.to_u32(mont_sub);
 
         assert_equal(normal_sub, result_sub, "减法测试");
@@ -81,9 +81,9 @@ int main()
 
         u32 normal_mul = normal_mod.mul(a, b);
 
-        u32 mont_a = montgomery.from_u32(a);
-        u32 mont_b = montgomery.from_u32(b);
-        u32 mont_mul = montgomery.mul(mont_a, mont_b);
+        u32_mont mont_a = montgomery.from_u32(a);
+        u32_mont mont_b = montgomery.from_u32(b);
+        u32_mont mont_mul = montgomery.mul(mont_a, mont_b);
         u32 result_mul = montgomery.to_u32(mont_mul);
 
         assert_equal(normal_mul, result_mul, "乘法测试");
@@ -96,9 +96,12 @@ int main()
         u32 exp = 12345;
 
         u32 normal_pow = normal_mod.pow(base, exp);
-        u32 mont_pow = montgomery.pow(base, exp);
 
-        assert_equal(normal_pow, mont_pow, "幂运算测试");
+        u32_mont mont_base = montgomery.from_u32(base);
+        u32_mont mont_pow = montgomery.pow(mont_base, exp);
+        u32 result_pow = montgomery.to_u32(mont_pow);
+
+        assert_equal(normal_pow, result_pow, "幂运算测试");
         print_success("幂运算测试");
     }
 
@@ -107,9 +110,12 @@ int main()
         u32 a = 123456789;
 
         u32 normal_inv = normal_mod.inv(a);
-        u32 mont_inv = montgomery.inv(a);
 
-        assert_equal(normal_inv, mont_inv, "逆元计算测试");
+        u32_mont mont_a = montgomery.from_u32(a);
+        u32_mont mont_inv = montgomery.inv(mont_a);
+        u32 result_inv = montgomery.to_u32(mont_inv);
+
+        assert_equal(normal_inv, result_inv, "逆元计算测试");
         print_success("逆元计算测试");
     }
 
