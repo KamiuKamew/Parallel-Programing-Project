@@ -3,21 +3,34 @@
 #include "type.h"
 
 // === 普通模运算 ===
-inline u32 mod_add(u32 a, u32 b, u32 mod) { return (a + b) % mod; }
-inline u32 mod_sub(u32 a, u32 b, u32 mod) { return (a - b + mod) % mod; }
-inline u32 mod_mul(u32 a, u32 b, u32 mod) { return (1LL * a * b) % mod; }
-inline u32 mod_pow(u32 base, u32 exp, u32 mod)
+class Mod
 {
-  u32 result = 1;
-  while (exp > 0)
+public:
+  Mod(u32 _mod) : mod(_mod) {}
+  Mod(const Mod &) = delete;
+  Mod &operator=(const Mod &) = delete;
+
+  u32 add(u32 a, u32 b) const { return (a + b) % mod; }
+  u32 sub(u32 a, u32 b) const { return (a >= b) ? (a - b) : (a + mod - b); }
+  u32 mul(u32 a, u32 b) const { return (1LL * a * b) % mod; }
+  u32 pow(u32 base, u32 exp) const
   {
-    if (exp & 1)
+    u32 result = 1;
+    while (exp > 0)
     {
-      result = mod_mul(result, base, mod);
+      if (exp & 1)
+      {
+        result = mul(result, base);
+      }
+      base = mul(base, base);
+      exp >>= 1;
     }
-    base = mod_mul(base, base, mod);
-    exp >>= 1;
+    return result;
   }
-  return result;
-}
-inline u32 mod_inv(u32 x, u32 mod) { return mod_pow(x, mod - 2, mod); }
+  u32 inv(u32 x) const { return pow(x, mod - 2); }
+
+private:
+  u32 mod;
+};
+
+// === Montgomery 模运算 ===
