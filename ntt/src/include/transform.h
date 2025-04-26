@@ -201,13 +201,12 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
     for (u32 j = 0; j < n; j += (mid << 1))
     {
       u32_mont w_mont = montMod.from_u32(1);
-      for (u32 k = 0; k < mid; ++k)
+      for (u32 k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
       {
-        u32_mont x = a_mont[j + k];
-        u32_mont y = a_mont[j + k + mid];
-        a_mont[j + k] = montMod.add(x, y);
-        a_mont[j + k + mid] = montMod.mul(w_mont, montMod.sub(x, y));
-        w_mont = montMod.mul(w_mont, Wn_mont);
+        u32_mont x_mont = a_mont[j + k];
+        u32_mont y_mont = a_mont[j + k + mid];
+        a_mont[j + k] = montMod.add(x_mont, y_mont);
+        a_mont[j + k + mid] = montMod.mul(w_mont, montMod.sub(x_mont, y_mont));
       }
     }
   }
@@ -215,6 +214,40 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
   u32_mont inv_n = montMod.inv(montMod.from_u32(n));
   for (u32 i = 0; i < n; ++i)
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
+}
+
+inline u32 get_lane(u32x4 v, int lane)
+{
+  switch (lane)
+  {
+  case 0:
+    return vgetq_lane_u32(v, 0);
+  case 1:
+    return vgetq_lane_u32(v, 1);
+  case 2:
+    return vgetq_lane_u32(v, 2);
+  case 3:
+    return vgetq_lane_u32(v, 3);
+  default:
+    __builtin_unreachable();
+  }
+}
+
+inline u32x4 set_lane(u32x4 v, u32 val, int lane)
+{
+  switch (lane)
+  {
+  case 0:
+    return vsetq_lane_u32(val, v, 0);
+  case 1:
+    return vsetq_lane_u32(val, v, 1);
+  case 2:
+    return vsetq_lane_u32(val, v, 2);
+  case 3:
+    return vsetq_lane_u32(val, v, 3);
+  default:
+    __builtin_unreachable();
+  }
 }
 
 /**
@@ -229,23 +262,6 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
  */
 inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n_simd, u32 p, u32x4_mont omega_mont_simd)
 {
-  MontModNeon montModNeon(p);
-
-  for (u32 mid = 1; mid < n_simd; mid <<= 1)
-  {
-    u32x4_mont Wn_mont = montModNeon.pow(omega_mont_simd, (p - 1) / (mid << 1));
-    for (u32 j = 0; j < n_simd; j += (mid << 1))
-    {
-      u32x4_mont w_mont = montModNeon.from_u32x4(vdupq_n_u32(1));
-      for (u32 k = 0; k < mid; ++k, w_mont = montModNeon.mul(w_mont, Wn_mont))
-      {
-        u32x4_mont x_mont = a_mont_simd[j + k];
-        u32x4_mont y_mont = montModNeon.mul(w_mont, a_mont_simd[j + k + mid]);
-        a_mont_simd[j + k] = montModNeon.add(x_mont, y_mont);
-        a_mont_simd[j + k + mid] = montModNeon.sub(x_mont, y_mont);
-      }
-    }
-  }
 }
 
 /**
@@ -260,26 +276,4 @@ inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n_simd, u32 p, u3
  */
 inline void ntt_inverse_dit_mont_simd(u32x4_mont *a_mont_simd, u32 n_simd, u32 p, u32x4_mont omega_mont_simd)
 {
-  MontModNeon montModNeon(p);
-
-  for (u32 mid = n_simd >> 1; mid > 0; mid >>= 1)
-  {
-    u32x4_mont Wn_mont = montModNeon.pow(omega_mont_simd, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
-    for (u32 j = 0; j < n_simd; j += (mid << 1))
-    {
-      u32x4_mont w_mont = montModNeon.from_u32x4(vdupq_n_u32(1));
-      for (u32 k = 0; k < mid; ++k)
-      {
-        u32x4_mont x = a_mont_simd[j + k];
-        u32x4_mont y = a_mont_simd[j + k + mid];
-        a_mont_simd[j + k] = montModNeon.add(x, y);
-        a_mont_simd[j + k + mid] = montModNeon.mul(w_mont, montModNeon.sub(x, y));
-        w_mont = montModNeon.mul(w_mont, Wn_mont);
-      }
-    }
-  }
-
-  u32x4_mont inv_n = montModNeon.inv(montModNeon.from_u32x4(vdupq_n_u32(n_simd)));
-  for (u32 i = 0; i < n_simd; ++i)
-    a_mont_simd[i] = montModNeon.mul(a_mont_simd[i], inv_n);
 }

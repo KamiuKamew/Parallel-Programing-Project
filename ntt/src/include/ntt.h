@@ -28,7 +28,6 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
   bit_reverse_permute(a_expanded, n_expanded);
   bit_reverse_permute(b_expanded, n_expanded);
 
-  // TODO: 这里转换成 SIMD 类型
   u32x4 *a_simd = to_simd(a_expanded, n_expanded);
   u32x4 *b_simd = to_simd(b_expanded, n_expanded);
   u32x4 *ab_simd = to_simd(new u32[n_expanded], n_expanded);
@@ -52,12 +51,21 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
   ntt_inverse_dit_mont_simd(ab_mont_simd, n_simd, p, montModNeon.inv(omega_mont_simd));
 
   for (u32 i = 0; i < n_simd; ++i)
-    ab_simd[i] = montModNeon.to_u32x4(ab_mont_simd[i]);
+    ab_simd[i] = montModNeon.to_u32x4(ab_mont_simd[i]); // 消除 mont
 
-  // TODO: 这里转换成普通类型
-  ab = (int *)from_simd(ab_simd, n_expanded);
+  u32 *ab_result = from_simd(ab_simd, n_expanded); // 消除 simd
 
-  bit_reverse_permute((u32 *)ab, n_expanded);
+  bit_reverse_permute((u32 *)ab_result, n_expanded); // 消除 bit reversion
+
+  for (u32 i = 0; i < n_expanded; ++i)
+    ab[i] = ab_result[i]; // TODO: 这里可以跟上面的from simd合并。
+
+  delete[] a_expanded;
+  delete[] b_expanded;
+  delete[] ab_result;
+  delete[] a_mont_simd;
+  delete[] b_mont_simd;
+  delete[] ab_mont_simd;
 }
 
 /**

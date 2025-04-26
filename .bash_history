@@ -169,3 +169,5 @@ mkdir -p ~/.cursor-server/data/User
 ~/install-extensions.sh
 chmod +x ~/cursor-start.sh && ~/cursor-start.sh
 . "\home\s2312237\.cursor-server\cli\servers\Stable-fd861c8a80c0f9e4e35294b1915ee8a7b29ae850\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+chmod +x ntt/src/test/compile_and_run_tests.sh
+cd ntt/src/test && ./compile_and_run_tests.sh
