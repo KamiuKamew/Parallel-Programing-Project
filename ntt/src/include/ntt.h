@@ -42,8 +42,8 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
   for (u32 i = 0; i < n_expanded; ++i)
     ab_mont[i] = montMod.mul(a_mont[i], b_mont[i]);
 
+  ntt_inverse_dit_mont(ab_mont, n_expanded, p, montMod.inv(omega_mont));
   bit_reverse_permute(ab_mont, n_expanded);
-  ntt_inverse_mont(ab_mont, n_expanded, p, omega_mont);
 
   for (u32 i = 0; i < n_expanded; ++i)
     ab[i] = montMod.to_u32(ab_mont[i]);
@@ -83,8 +83,8 @@ inline void poly_multiply_ntt(int *a, int *b, int *ab, int n, int p)
   for (u32 i = 0; i < n_expanded; ++i)
     ab_mont[i] = montMod.mul(a_mont[i], b_mont[i]);
 
+  ntt_inverse_dit_mont(ab_mont, n_expanded, p, montMod.inv(omega_mont));
   bit_reverse_permute(ab_mont, n_expanded);
-  ntt_inverse_mont(ab_mont, n_expanded, p, omega_mont);
 
   for (u32 i = 0; i < n_expanded; ++i)
     ab[i] = montMod.to_u32(ab_mont[i]);
