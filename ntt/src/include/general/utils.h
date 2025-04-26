@@ -27,24 +27,6 @@ inline u32 *expand_a(u32 *a, u32 n, u32 n_expanded)
     return a_expanded;
 }
 
-/** 将 a 转换成 SIMD 类型。 */
-inline u32x4 *to_simd(u32 *a, u32 n_expanded)
-{
-    u32x4 *a_simd = new u32x4[n_expanded / 4];
-    for (u32 i = 0; i < n_expanded / 4; ++i)
-        a_simd[i] = vld1q_u32(&a[i * 4]);
-    return a_simd;
-}
-
-/** 将 a_simd 转换成普通类型。 */
-inline u32 *from_simd(u32x4 *a_simd, u32 n_expanded)
-{
-    u32 *a = new u32[n_expanded];
-    for (u32 i = 0; i < n_expanded / 4; ++i)
-        vst1q_u32(&a[i * 4], a_simd[i]);
-    return a;
-}
-
 /**
  * @brief 就地对 a 做 bit-reverse 置换。
  *

@@ -27,9 +27,12 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
     bit_reverse_permute(a_expanded, n_expanded);
     bit_reverse_permute(b_expanded, n_expanded);
 
-    u32x4 *a_simd = to_simd(a_expanded, n_expanded);
-    u32x4 *b_simd = to_simd(b_expanded, n_expanded);
-    u32x4 *ab_simd = to_simd(new u32[n_expanded], n_expanded);
+    u32x4 *a_simd = new u32x4[n_expanded / 4];
+    u32x4 *b_simd = new u32x4[n_expanded / 4];
+    u32x4 *ab_simd = new u32x4[n_expanded / 4];
+    to_simd(a_expanded, a_simd, n_expanded);
+    to_simd(b_expanded, b_simd, n_expanded);
+    to_simd(new u32[n_expanded], ab_simd, n_expanded);
     u32 n_simd = n_expanded / 4;
 
     u32x4_mont *a_mont_simd = new u32x4_mont[n_simd];
@@ -52,7 +55,8 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
     for (u32 i = 0; i < n_simd; ++i)
         ab_simd[i] = montModNeon.to_u32x4(ab_mont_simd[i]); // 消除 mont
 
-    u32 *ab_result = from_simd(ab_simd, n_expanded); // 消除 simd
+    u32 *ab_result = new u32[n_expanded];
+    from_simd(ab_result, ab_simd, n_expanded); // 消除 simd
 
     bit_reverse_permute((u32 *)ab_result, n_expanded); // 消除 bit reversion
 

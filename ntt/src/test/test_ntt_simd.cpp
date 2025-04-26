@@ -6,8 +6,9 @@
 #include <vector>
 
 #include "../include/transform.h"
-#include "../include/op.h"
-#include "../include/type.h"
+#include "../include/general/utils.h"
+#include "../include/transform_simd.h"
+#include "../include/utils_simd.h"
 
 // 随机生成测试数据
 void generate_random_data(u32 *data, u32 n, u32 p)
@@ -80,11 +81,8 @@ void test_ntt_forward_consistency(u32 n, u32 p, u32_mont omega_mont)
         }
     }
 
-    // 创建SIMD版本的omega
-    u32x4_mont omega_mont_simd = vdupq_n_u32(omega_mont);
-
     // 使用SIMD版本的NTT前向变换
-    ntt_forward_mont_simd(a_mont_simd, n_expanded / 4, p, omega_mont_simd);
+    ntt_forward_mont_simd(a_mont_simd, n_expanded, p, omega_mont);
 
     // 将SIMD结果转换回普通数组
     u32_mont *a_mont_simd_result = new u32_mont[n_expanded];

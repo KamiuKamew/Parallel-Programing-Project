@@ -2,6 +2,20 @@
 
 #include "general/type.h"
 
+/** 将 a 转换成 SIMD 类型。 */
+inline void to_simd(u32 *a, u32x4 *a_simd, u32 n_expanded)
+{
+    for (u32 i = 0; i < n_expanded / 4; ++i)
+        a_simd[i] = vld1q_u32(&a[i * 4]);
+}
+
+/** 将 a_simd 转换成普通类型。 */
+inline void from_simd(u32 *a, u32x4 *a_simd, u32 n_expanded)
+{
+    for (u32 i = 0; i < n_expanded / 4; ++i)
+        vst1q_u32(&a[i * 4], a_simd[i]);
+}
+
 inline u32 get_lane(u32x4 v, int lane)
 {
     switch (lane)
