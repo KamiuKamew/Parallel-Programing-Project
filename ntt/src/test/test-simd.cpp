@@ -96,6 +96,30 @@ void test_montgomery_correctness()
                 return;
             }
         }
+
+        // === 测试快速幂 ===
+        u32x4 pow_simd = simd.pow(a_mont_simd, 10);
+        for (int j = 0; j < 4; ++j)
+        {
+            u32 expected = scalar.pow(a_mont_scalar[j], 10);
+            if (pow_simd[j] != expected)
+            {
+                printf("pow mismatch at %d: got %u, expected %u\n", i + j, pow_simd[j], expected);
+                return;
+            }
+        }
+
+        // === 测试模逆 ===
+        u32x4 inv_simd = simd.inv(a_mont_simd);
+        for (int j = 0; j < 4; ++j)
+        {
+            u32 expected = scalar.inv(a_mont_scalar[j]);
+            if (inv_simd[j] != expected)
+            {
+                printf("inv mismatch at %d: got %u, expected %u\n", i + j, inv_simd[j], expected);
+                return;
+            }
+        }
     }
 
     printf("All tests passed!\n");

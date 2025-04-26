@@ -126,19 +126,13 @@ public:
   MontModNeon(const MontModNeon &) = delete;
   MontModNeon &operator=(const MontModNeon &) = delete;
 
-  // 将普通数转换成Montgomery数
   u32x4_mont from_u32x4(u32x4 a) const
   {
     u64x2 t0 = vmull_u32(vget_low_u32(a), vdup_n_u32(r2));
     u64x2 t1 = vmull_u32(vget_high_u32(a), vdup_n_u32(r2));
     return reduce_pair(t0, t1);
   }
-
-  // 将Montgomery数转换成普通数
-  u32x4 to_u32x4(u32x4_mont a_mont) const
-  {
-    return reduce(a_mont);
-  }
+  u32x4 to_u32x4(u32x4_mont a_mont) const { return reduce(a_mont); }
 
   // SIMD版 Montgomery规约
   u32x4_mont reduce(u32x4 t_lo) const
@@ -174,7 +168,6 @@ public:
     return res;
   }
 
-  // 加法 (带模)
   u32x4_mont add(u32x4_mont a, u32x4_mont b) const
   {
     u32x4 res = vaddq_u32(a, b);
@@ -183,7 +176,6 @@ public:
     return vsubq_u32(res, mod_masked);
   }
 
-  // 减法 (带模)
   u32x4_mont sub(u32x4_mont a, u32x4_mont b) const
   {
     uint32x4_t mask = vcgeq_u32(a, b);
@@ -192,13 +184,27 @@ public:
     return vbslq_u32(mask, res1, res2);
   }
 
-  // 乘法
   u32x4_mont mul(u32x4_mont a, u32x4_mont b) const
   {
     u64x2 prod0 = vmull_u32(vget_low_u32(a), vget_low_u32(b));
     u64x2 prod1 = vmull_u32(vget_high_u32(a), vget_high_u32(b));
     return reduce_pair(prod0, prod1);
   }
+
+  u32x4_mont pow(u32x4_mont base_mont, u32 exp) const
+  {
+    u32x4 result_mont = from_u32x4(vdupq_n_u32(1));
+    while (exp > 0)
+    {
+      if (exp & 1)
+        result_mont = mul(result_mont, base_mont);
+      base_mont = mul(base_mont, base_mont);
+      exp >>= 1;
+    }
+    return result_mont;
+  }
+
+  u32x4_mont inv(u32x4_mont x_mont) const { return pow(x_mont, mod - 2); }
 
 private:
   u32 mod;
