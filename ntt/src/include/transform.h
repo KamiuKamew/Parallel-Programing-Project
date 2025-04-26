@@ -216,3 +216,70 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
   for (u32 i = 0; i < n; ++i)
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
 }
+
+/**
+ * @brief NTT 正变换：a(x) → A(ω)
+ *
+ * ntt_forward_mont 的 SIMD 版本。
+ *
+ * @param a_mont_simd 多项式系数（位于 Montgomery 数域），变换后表示频域系数（位于 Montgomery 数域）
+ * @param n_simd 多项式长度 / 4（普通整数）
+ * @param p 模数（普通整数）
+ * @param omega_mont_simd 原根（位于 Montgomery 数域）
+ */
+inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n_simd, u32 p, u32x4_mont omega_mont_simd)
+{
+  MontModNeon montModNeon(p);
+
+  for (u32 mid = 1; mid < n_simd; mid <<= 1)
+  {
+    u32x4_mont Wn_mont = montModNeon.pow(omega_mont_simd, (p - 1) / (mid << 1));
+    for (u32 j = 0; j < n_simd; j += (mid << 1))
+    {
+      u32x4_mont w_mont = montModNeon.from_u32x4(vdupq_n_u32(1));
+      for (u32 k = 0; k < mid; ++k, w_mont = montModNeon.mul(w_mont, Wn_mont))
+      {
+        u32x4_mont x_mont = a_mont_simd[j + k];
+        u32x4_mont y_mont = montModNeon.mul(w_mont, a_mont_simd[j + k + mid]);
+        a_mont_simd[j + k] = montModNeon.add(x_mont, y_mont);
+        a_mont_simd[j + k + mid] = montModNeon.sub(x_mont, y_mont);
+      }
+    }
+  }
+}
+
+/**
+ * @brief NTT 逆变换：A(ω) → a_mont(x)
+ *
+ * ntt_inverse_dit_mont 的 SIMD 版本。
+ *
+ * @param a_mont_simd 频域系数，变换后表示多项式系数
+ * @param n_simd 多项式长度 / 4（普通整数）
+ * @param p 模数（普通整数）
+ * @param omega_mont_simd 原根（位于 Montgomery 数域）
+ */
+inline void ntt_inverse_dit_mont_simd(u32x4_mont *a_mont_simd, u32 n_simd, u32 p, u32x4_mont omega_mont_simd)
+{
+  MontModNeon montModNeon(p);
+
+  for (u32 mid = n_simd >> 1; mid > 0; mid >>= 1)
+  {
+    u32x4_mont Wn_mont = montModNeon.pow(omega_mont_simd, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
+    for (u32 j = 0; j < n_simd; j += (mid << 1))
+    {
+      u32x4_mont w_mont = montModNeon.from_u32x4(vdupq_n_u32(1));
+      for (u32 k = 0; k < mid; ++k)
+      {
+        u32x4_mont x = a_mont_simd[j + k];
+        u32x4_mont y = a_mont_simd[j + k + mid];
+        a_mont_simd[j + k] = montModNeon.add(x, y);
+        a_mont_simd[j + k + mid] = montModNeon.mul(w_mont, montModNeon.sub(x, y));
+        w_mont = montModNeon.mul(w_mont, Wn_mont);
+      }
+    }
+  }
+
+  u32x4_mont inv_n = montModNeon.inv(montModNeon.from_u32x4(vdupq_n_u32(n_simd)));
+  for (u32 i = 0; i < n_simd; ++i)
+    a_mont_simd[i] = montModNeon.mul(a_mont_simd[i], inv_n);
+}

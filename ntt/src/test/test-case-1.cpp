@@ -4,24 +4,32 @@
 
 int a[] = {1, 5, 5, 4, 0, 0, 0, 0};
 int b[] = {4, 1, 5, 2, 0, 0, 0, 0};
-int ab_naive[8], ab_ntt[8];
+int ab_naive[8], ab_ntt[8], ab_ntt_simd[8];
 
 int main()
 {
   poly_multiply_naive(a, b, ab_naive, 4, 998244353);
   poly_multiply_ntt(a, b, ab_ntt, 4, 998244353);
+  poly_multiply_ntt_simd(a, b, ab_ntt_simd, 4, 998244353);
 
-  std::cout << "naive: ";
+  std::cout << "naive:   ";
   for (int i = 0; i < 8; ++i)
   {
     std::cout << ab_naive[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "ntt:   ";
+  std::cout << "ntt:     ";
   for (int i = 0; i < 8; ++i)
   {
     std::cout << ab_ntt[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "ntt_simd:";
+  for (int i = 0; i < 8; ++i)
+  {
+    std::cout << ab_ntt_simd[i] << " ";
   }
   std::cout << std::endl;
 
