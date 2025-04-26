@@ -1,7 +1,7 @@
 #pragma once
 
-#include "general/op.h"
-#include "utils_simd.h"
+#include "../general/op.h"
+#include "utils.h"
 /**
  * @brief NTT 正变换：a(x) → A(ω)
  *

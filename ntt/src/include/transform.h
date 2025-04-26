@@ -225,3 +225,88 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
   for (u32 i = 0; i < n; ++i)
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
 }
+
+inline void ntt_inverse_dit_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+{
+  MontMod montMod(p);
+
+  for (u32 mid = n >> 1; mid > 0; mid >>= 1)
+  {
+    switch (mid)
+    {
+    case 1:
+    {
+      u32_mont w_mont = montMod.from_u32(1);
+      u32_mont x_mont = a_mont[0];
+      u32_mont y_mont = a_mont[1];
+      a_mont[0] = montMod.add(x_mont, y_mont);
+      a_mont[1] = montMod.mul(w_mont, montMod.sub(x_mont, y_mont));
+      break;
+    }
+
+    case 2:
+    {
+      u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+      for (u32 j = 0; j < n; j += (mid << 1))
+      {
+        u32_mont w_mont_0 = montMod.from_u32(1);
+        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        u32_mont x_mont_0 = a_mont[j + 0];
+        u32_mont x_mont_1 = a_mont[j + 1];
+        u32_mont y_mont_0 = a_mont[j + 2];
+        u32_mont y_mont_1 = a_mont[j + 3];
+        a_mont[j + 0] = montMod.add(x_mont_0, y_mont_0);
+        a_mont[j + 1] = montMod.add(x_mont_1, y_mont_1);
+        a_mont[j + 2] = montMod.mul(w_mont_0, montMod.sub(x_mont_0, y_mont_0));
+        a_mont[j + 3] = montMod.mul(w_mont_1, montMod.sub(x_mont_1, y_mont_1));
+      }
+      break;
+    }
+
+    default: // mid >= 4, parallelizable
+    {
+      u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+      for (u32 j = 0; j < n; j += (mid << 1))
+      {
+        u32_mont w_mont_0 = montMod.from_u32(1);
+        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        u32_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
+        u32_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
+        u32_mont Wn_mont_4 = montMod.pow(Wn_mont, 4);
+        for (u32 k = 0; k < mid; k += 4)
+        {
+          u32_mont x_mont_0 = a_mont[j + k + 0];
+          u32_mont x_mont_1 = a_mont[j + k + 1];
+          u32_mont x_mont_2 = a_mont[j + k + 2];
+          u32_mont x_mont_3 = a_mont[j + k + 3];
+
+          u32_mont y_mont_0 = a_mont[j + k + mid + 0];
+          u32_mont y_mont_1 = a_mont[j + k + mid + 1];
+          u32_mont y_mont_2 = a_mont[j + k + mid + 2];
+          u32_mont y_mont_3 = a_mont[j + k + mid + 3];
+
+          a_mont[j + k + 0] = montMod.add(x_mont_0, y_mont_0);
+          a_mont[j + k + 1] = montMod.add(x_mont_1, y_mont_1);
+          a_mont[j + k + 2] = montMod.add(x_mont_2, y_mont_2);
+          a_mont[j + k + 3] = montMod.add(x_mont_3, y_mont_3);
+
+          a_mont[j + k + mid + 0] = montMod.mul(w_mont_0, montMod.sub(x_mont_0, y_mont_0));
+          a_mont[j + k + mid + 1] = montMod.mul(w_mont_1, montMod.sub(x_mont_1, y_mont_1));
+          a_mont[j + k + mid + 2] = montMod.mul(w_mont_2, montMod.sub(x_mont_2, y_mont_2));
+          a_mont[j + k + mid + 3] = montMod.mul(w_mont_3, montMod.sub(x_mont_3, y_mont_3));
+
+          w_mont_0 = montMod.mul(w_mont_0, Wn_mont_4);
+          w_mont_1 = montMod.mul(w_mont_1, Wn_mont_4);
+          w_mont_2 = montMod.mul(w_mont_2, Wn_mont_4);
+          w_mont_3 = montMod.mul(w_mont_3, Wn_mont_4);
+        }
+      }
+      break;
+    }
+    }
+  }
+
+  u32_mont inv_n = montMod.inv(montMod.from_u32(n));
+  for (u32 i = 0; i < n; ++i)
+    a_mont[i] = montMod.mul(a_mont[i], inv_n);
+}

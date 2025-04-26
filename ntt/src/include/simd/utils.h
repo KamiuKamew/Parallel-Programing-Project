@@ -1,6 +1,7 @@
 #pragma once
 
-#include "general/type.h"
+#include "../general/type.h"
+#include "type.h"
 
 /** 将 a 转换成 SIMD 类型。 */
 inline void to_simd(u32 *a, u32x4 *a_simd, u32 n_expanded)

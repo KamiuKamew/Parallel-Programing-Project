@@ -1,6 +1,6 @@
-#include "general/utils.h"
-#include "transform_simd.h"
-#include "utils_simd.h"
+#include "../general/utils.h"
+#include "utils.h"
+#include "transform.h"
 
 #define OMEGA 3 // 998244353 的原根
 
