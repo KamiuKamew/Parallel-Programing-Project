@@ -140,3 +140,32 @@ cat ntt/src/include/type.h | cat
 pwd && ls src/include | cat
 cat src/include/type.h | cat
 g++ -c -o /dev/null src/include/op.h 2>&1 | cat
+cd "/home/s2312237/ntt/src/test/output"
+./"test-montgomery"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-montgomery"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-montgomery"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-montgomery"
+ls -la
+mkdir -p ~/.vscode-server/data/
+tar -xzf vscode-user-settings.tar.gz --strip-components=4 -C ~/.vscode-server/data/
+ls -la ~/.vscode-server/data/
+mkdir -p ~/.vscode-server/extensions
+cat vscode-extensions.txt | xargs -n 1 code --install-extension
+ls -la ~/.vscode-server/bin/
+. "\home\s2312237\.cursor-server\cli\servers\Stable-fd861c8a80c0f9e4e35294b1915ee8a7b29ae850\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+mkdir -p ~/.cursor-server/extensions && ls -la ~/.cursor-server
+mkdir -p ~/temp-settings && tar -xzf ~/vscode-user-settings.tar.gz -C ~/temp-settings && ls -la ~/temp-settings
+find ~/temp-settings -type d | sort
+find ~/temp-settings -name "settings.json" | xargs ls -la
+find ~/temp-settings -name "settings.json"
+find ~/temp-settings -type f -name "*.json" | head -10
+ls -la ~/temp-settings/home/hexay/.vscode-server/data/User/
+mkdir -p ~/.cursor/extensions
+chmod +x ~/install-extensions.sh
+mkdir -p ~/.cursor-server/data/User
+~/install-extensions.sh
+chmod +x ~/cursor-start.sh && ~/cursor-start.sh
+. "\home\s2312237\.cursor-server\cli\servers\Stable-fd861c8a80c0f9e4e35294b1915ee8a7b29ae850\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
