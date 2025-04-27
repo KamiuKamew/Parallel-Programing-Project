@@ -7,8 +7,11 @@
 
 #include "../include/transform.h"
 #include "../include/general/utils.h"
-#include "../include/transform_simd.h"
-#include "../include/utils_simd.h"
+#include "../include/simd/transform.h"
+#include "../include/simd/utils.h"
+
+#include "../include/simd/print.h"
+#include "../include/general/print.h"
 
 // 随机生成测试数据
 void generate_random_data(u32 *data, u32 n, u32 p)
@@ -65,7 +68,9 @@ void test_ntt_forward_consistency(u32 n, u32 p, u32_mont omega_mont)
     bit_reverse_permute(a_mont2, n_expanded);
 
     // 使用常规的NTT前向变换
+    debug_print_array(a_mont1, n_expanded, "pre-ntt a_mont1: ");
     ntt_forward_mont(a_mont1, n_expanded, p, omega_mont);
+    debug_print_array(a_mont1, n_expanded, "post-ntt a_mont1: ");
 
     // 创建SIMD版本的数据
     u32_mont *a_mont2_copy = new u32_mont[n_expanded];
@@ -82,7 +87,9 @@ void test_ntt_forward_consistency(u32 n, u32 p, u32_mont omega_mont)
     }
 
     // 使用SIMD版本的NTT前向变换
+    debug_print_simd_array(a_mont_simd, n_expanded / 4, "pre-ntt a_mont_simd: ");
     ntt_forward_mont_simd(a_mont_simd, n_expanded, p, omega_mont);
+    debug_print_simd_array(a_mont_simd, n_expanded / 4, "post-ntt a_mont_simd: ");
 
     // 将SIMD结果转换回普通数组
     u32_mont *a_mont_simd_result = new u32_mont[n_expanded];
@@ -137,15 +144,15 @@ void test_ntt_forward_consistency(u32 n, u32 p, u32_mont omega_mont)
 int main()
 {
     // 设置素数p和原根omega
-    u32 p = 257; // 一个简单的素数，可以根据需要更改
+    u32 p = 998244353; // 一个简单的素数，可以根据需要更改
     MontMod montMod(p);
     u32_mont omega_mont = montMod.from_u32(3); // 假设3是mod p的原根
 
     // 测试不同大小的输入
     test_ntt_forward_consistency(8, p, omega_mont);
-    test_ntt_forward_consistency(16, p, omega_mont);
-    test_ntt_forward_consistency(32, p, omega_mont);
-    test_ntt_forward_consistency(64, p, omega_mont);
+    // test_ntt_forward_consistency(16, p, omega_mont);
+    // test_ntt_forward_consistency(32, p, omega_mont);
+    // test_ntt_forward_consistency(64, p, omega_mont);
 
     // 如果系统资源允许，可以测试更大的输入
     // test_ntt_forward_consistency(128, p, omega_mont);

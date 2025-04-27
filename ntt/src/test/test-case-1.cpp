@@ -1,5 +1,5 @@
 #include "../include/ntt.h"
-#include "../include/ntt_simd.h"
+#include "../include/simd/ntt.h"
 
 #include <iostream>
 

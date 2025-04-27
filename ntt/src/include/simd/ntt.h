@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../general/utils.h"
 #include "utils.h"
 #include "transform.h"
@@ -44,13 +46,13 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
         b_mont_simd[i] = montModNeon.from_u32x4(b_simd[i]);
     u32_mont omega_mont = montMod.from_u32(OMEGA);
 
-    ntt_forward_mont_simd(a_mont_simd, n_simd, p, omega_mont);
-    ntt_forward_mont_simd(b_mont_simd, n_simd, p, omega_mont);
+    ntt_forward_mont_simd(a_mont_simd, n_expanded, p, omega_mont);
+    ntt_forward_mont_simd(b_mont_simd, n_expanded, p, omega_mont);
 
     for (u32 i = 0; i < n_simd; ++i)
         ab_mont_simd[i] = montModNeon.mul(a_mont_simd[i], b_mont_simd[i]);
 
-    ntt_inverse_dit_mont_simd(ab_mont_simd, n_simd, p, montMod.inv(omega_mont));
+    ntt_inverse_dit_mont_simd(ab_mont_simd, n_expanded, p, montMod.inv(omega_mont));
 
     for (u32 i = 0; i < n_simd; ++i)
         ab_simd[i] = montModNeon.to_u32x4(ab_mont_simd[i]); // 消除 mont
