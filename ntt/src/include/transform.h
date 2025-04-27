@@ -171,29 +171,6 @@ inline void ntt_forward_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
 /**
  * @brief NTT 逆变换：A(ω) → a_mont(x)
  *
- * 复用正变换的版本。
- * 输入的顺序是 bit-reversed，输出的顺序是自然顺序。
- *
- * @param a_mont 频域系数，变换后表示多项式系数
- * @param n 多项式长度
- * @param p 模数
- * @param omega_mont 原根
- */
-inline void ntt_inverse_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
-{
-  MontMod montMod(p);
-
-  ntt_forward_mont(a_mont, n, p, montMod.inv(omega_mont));
-
-  u32_mont n_mont = montMod.from_u32(n);
-  u32_mont inv_n_mont = montMod.inv(n_mont);
-  for (u32 i = 0; i < n; ++i)
-    a_mont[i] = montMod.mul(a_mont[i], inv_n_mont); // 最后每个元素乘以 n 的逆元
-}
-
-/**
- * @brief NTT 逆变换：A(ω) → a_mont(x)
- *
  * 输入的顺序是自然顺序，输出的顺序是 bit-reversed。
  *
  * @param a_mont 频域系数，变换后表示多项式系数
@@ -201,7 +178,7 @@ inline void ntt_inverse_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont
  * @param p 模数
  * @param omega_mont 原根，已经是正变换的 ω，在调用时传 montMod.inv(omega_mont)
  */
-inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+inline void ntt_inverse_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
 {
   MontMod montMod(p);
 
@@ -226,7 +203,7 @@ inline void ntt_inverse_dit_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
 }
 
-inline void ntt_inverse_dit_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+inline void ntt_inverse_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
 {
   MontMod montMod(p);
 

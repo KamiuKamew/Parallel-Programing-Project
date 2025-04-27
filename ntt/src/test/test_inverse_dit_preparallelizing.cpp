@@ -9,7 +9,7 @@ int main()
 
     // 对使用相同的输入数据测试两个函数
     ntt_inverse_dit_mont(a, 16, 998244353, 3);
-    ntt_inverse_dit_mont_before_simd(b, 16, 998244353, 3);
+    ntt_inverse_mont_before_simd(b, 16, 998244353, 3);
 
     // 输出第一个函数的结果
     for (int i = 0; i < 16; i++)
