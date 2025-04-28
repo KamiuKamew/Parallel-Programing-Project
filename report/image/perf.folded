@@ -1,0 +1,35 @@
+test-generator;[ld-linux-aarch64.so.1];[ld-linux-aarch64.so.1];[ld-linux-aarch64.so.1];[ld-linux-aarch64.so.1];[ld-linux-aarch64.so.1] 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;bit_reverse_permute 23500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;generate_random_polynomial 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;generate_random_polynomial;std::uniform_int_distribution<int>::operator;std::uniform_int_distribution<int>::operator;std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::_M_gen_rand 1500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;generate_random_polynomial;std::uniform_int_distribution<int>::operator;std::uniform_int_distribution<int>::operator;std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator 2000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;generate_random_polynomial;std::uniform_int_distribution<int>::operator;std::uniform_int_distribution<int>::param_type::a 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontMod::add 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontMod::mul 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontMod::sub 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::add 11000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::from_u32x4 3000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::reduce_pair 8500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::sub 14000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::to_u32x4;MontModNeon::reduce 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;MontModNeon::to_u32x4;MontModNeon::reduce_pair 3000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;expand_a 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd 5000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::from_u32 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::mul 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::pow 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::pow;MontMod::mul 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::pow;MontMod::reduce 3000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontMod::reduce 5500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontModNeon::mul 41500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_forward_mont_simd;MontModNeon::reduce_pair 73500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd 2500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontMod::mul 500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontMod::pow;MontMod::mul 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontMod::pow;MontMod::reduce 1000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontMod::reduce 5500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontModNeon::mul 26000000
+test-generator;_start;__libc_start_main;[libc.so.6];main;poly_multiply_ntt_simd;ntt_inverse_dit_mont_simd;MontModNeon::reduce_pair 33500000
+test-generator;_start;__libc_start_main;[libc.so.6];main;to_simd 500000
+test-generator;_start;__libc_start_main;[libc.so.6];operator delete 500000

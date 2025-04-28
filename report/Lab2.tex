@@ -117,8 +117,8 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
     \includegraphics[width=0.8\textwidth]{NKU.png}\\[1cm]
     \vspace{20mm}
 		\textbf{\huge\textbf{\kaishu{计算机学院}}}\\[0.5cm]
-		\textbf{\huge{\kaishu{并行程序设计调研报告/实验报告}}}\\[2.3cm]
-		\textbf{\Huge\textbf{\kaishu{报告标题}}}
+		\textbf{\huge{\kaishu{并行程序设计实验报告}}}\\[2.3cm]
+		\textbf{\Huge\textbf{\kaishu{SIMD编程}}}
 
 		\vspace{\fill}
     
@@ -150,18 +150,33 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
 
 实际上，这次实验的过程非常曲折，代码重构了很多次。如果按照实际实验顺序撰写报告，报告内容会乱成一团，可能在做着并行的时候又跑去改串行代码了；而如果按照基础-进阶的顺序撰写报告，则会出现"报告前半部分的某处代码是由后半部分的另一处代码改进而来"这样的"倒叙"结构，观感较差。
 
-因此，我打算打乱顺序，按照"基础串行代码——便于并行化的串行代码——封装基本并行运算——并行化代码"的顺序撰写。最后，我们统一分析各个步骤带来的性能提升。
+因此，我打算重排讲解顺序，按照"基础串行代码——便于并行化的串行代码——封装基本并行运算——并行化代码"的顺序撰写。最后，我们统一分析各个步骤带来的性能提升，以及使用 perf 工具进行深入剖析。
 
-注：这里我记录一下我的实际实验顺序：
+\paragraph{问题描述} 多项式乘法作为基础的数学运算，在信号处理、计算机图形学、密码学等领域有着广泛应用。特别是在同态加密领域，多项式乘法是核心运算之一。设两个多项式$f(x) = a_{n-1}x^{n-1} + \ldots + a_1x + a_0$和$g(x) = b_{m-1}x^{m-1} + \ldots + b_1x + b_0$，它们的乘积$h(x) = f(x)g(x)$中，系数$h_k = \sum_{i=0}^{k} a_i b_{k-i}$。
 
+朴素实现的多项式乘法复杂度为$O(n^2)$，在实际应用中效率过低。为此，可采用数论变换(NTT)将复杂度降至$O(n\log n)$。NTT是离散傅里叶变换(FFT)在有限域上的对应，通过使用$\mathbb{Z}_p$上的单位根($p$为质数)代替复数单位根，避免了浮点运算带来的误差。NTT的基本思想是将多项式从系数表示转换为点值表示，在点值表示下完成乘法，再转回系数表示。
+
+本实验要求使用SIMD技术对NTT算法进行并行优化，主要难点在于：
 \begin{enumerate}
-    \item 基本串行代码
-    \item Montgomery 模乘
-    \item Montgomery 模乘：并行化（即"封装基本并行运算"）
-    \item 重写逆变换
-    \item 撰写便于并行化的串行代码
-    \item 并行化
+    \item NEON指令集不直接支持取模运算，需要自行实现向量化的模运算
+    \item NTT的蝶形变换中的循环主体需要特殊处理才能有效向量化
 \end{enumerate}
+
+为解决第一个难点，可以采用Montgomery规约将模乘转换为支持向量化的操作。对于第二个难点，需要根据步长(mid)分情况讨论，当步长小于向量长度时使用标量计算，当步长足够大时才使用向量计算。本实验将围绕这两个难点，设计并实现基于ARM NEON指令集的向量化NTT算法，并与串行版本进行性能对比分析。
+
+\paragraph{实验环境} 本次实验均在校方服务器上进行，程序编译与运行均基于\texttt{test.sh}进行，编译选项均采用O0优化等级。
+
+\paragraph{实验设计} 除perf测试以外，本实验的测试用例均为校方服务器中的第0个和第1个测试样例；perf测试使用了自定义的样例生成器，数据规模为\texttt{n = 32768}。性能指标均选用算法运行延迟时长。
+
+\paragraph{GitHub 项目链接} \url{https://github.com/KamiuKamew/Parallel-Programing-Project}，其中本次实验实现的部分在\texttt{src/include}文件夹中。
+
+\section{摘要}
+
+本实验实现并优化了基于数论变换（NTT）的多项式乘法算法。我们首先构建了基础的串行NTT算法，然后通过Montgomery规约实现了高效的模运算，最后使用SIMD指令集（ARM NEON）对算法进行并行优化。
+
+实验过程中，我们分析了NTT蝶形运算的结构特点，重构了串行代码以适应向量化处理，并实现了向量化的Montgomery模运算库。通过性能测试，我们发现基础串行版本到最终优化版本的性能提升达到1446倍，其中算法结构优化贡献了约910倍，Montgomery规约优化提升了约27\%，SIMD并行优化进一步提升了约13\%。
+
+最后，我们使用perf工具对代码进行深入剖析，确定了\texttt{MontModNeon::reduce\_pair}和\texttt{MontModNeon::mul}这两个函数是性能瓶颈，分析了其原因主要在于复杂的逻辑和因连续依赖导致的流水线阻塞。本实验表明，在多项式乘法计算中，合理的算法选择和平台相关的优化能带来显著的性能提升。
 
 \section{基础串行代码}
 
@@ -411,12 +426,13 @@ for(int mid = 1; mid < limit; mid <<= 1) {
 
 我们要对\texttt{a[]}进行向量化，就需要让\texttt{a[j + k]}和\texttt{a[j + k + mid]}这样对\texttt{a[]}的\textbf{随机}访问和处理变成\textbf{统一}的格式，这样才能实现 SIMD。
 
-首先，我们对各层\texttt{for}循环的行为进行分析。以\texttt{limit = 8}为例，我们可以观察到各个循环变量的行为，以及各次循环中的蝶形运算变量如下：
+首先，我们对各层\texttt{for}循环的行为进行分析。以\texttt{limit = 8}为例，我们可以观察到各个循环变量的行为，以及各次循环中的蝶形运算变量，如图\ref{p2}所示。
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{image/1.png}
     \caption{蝶形运算变量行为}
+    \label{p2}
 \end{figure}
 
 我们可以看到，\texttt{mid}始终为 2 的幂次（废话）。当\texttt{mid}为 1 或 2 时，蝶形运算均在单个\texttt{u32x4}向量内部进行；只有在\texttt{mid}大于等于 4 的时候，蝶形运算才能在两个\texttt{u32x4}之间进行。
@@ -750,14 +766,108 @@ if (is_serial)
 
 \section{性能分析}
 
-通过对各个版本的代码进行性能测试，我们可以对比不同实现方法的效率差异。我们将性能分析主要集中在以下几个方面：
+在本次实验中，我们对 NTT 算法实现了多个版本的优化，包括基础串行实现（naive）、NTT 优化的串行实现（serial）、Montgomery 规约优化（montgomery）以及 SIMD 并行优化（parallel）。下面我们将分析不同版本在不同多项式长度下的性能表现。随后，我们将重点就 SIMD 并行优化的代码，使用 perf 进行深入的性能测试与剖析。
+
+\subsection{各版本的测试结果}
+
+我们在在校方服务器环境下，对各个版本的算法进行测试，记录不同规模下的平均延迟（单位：微秒），如表\ref{t1}所示。同时，我们将结果在对数坐标下绘制为图表\ref{p1}，以便直观地对比各个版本在不同数据规模下的平均延迟。
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+实现版本 & n=4 & n=131072 & 对大规模的加速比 \\ \hline
+基础串行（naive） & 0.00018 & 95420.7 & 1.0$\times$ \\ \hline
+优化串行（serial） & 0.0041 & 104.736 & 910.9$\times$ \\ \hline
+Montgomery（montgomery） & 0.00485 & 76.1702 & 1252.7$\times$ \\ \hline
+SIMD 并行（parallel） & 0.01747 & 65.9827 & 1446.1$\times$ \\ \hline
+\end{tabular}
+\caption{不同实现在不同规模下的性能对比}
+\label{t1}
+\end{table}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{image/2.png}
+    \caption{各版本在不同数据规模下的平均延迟对比（对数坐标）}
+    \label{\p1}
+\end{figure}
+
+我们可以发现，在小规模数据（n=4）下，基础串行版本反而表现出最低的延迟。我们认为，这是因为优化版本引入的额外开销（如初始化 Montgomery 常量、SIMD 向量的包装与解包等）在小数据量下无法抵消获得的收益；甚至，在\texttt{n = 4}的极小规模下，我们的代码完全无法进行 SIMD 运算，反而由于向量化和去向量化的操作引入了大量的无用操作。
+
+除此以外，在大规模数据（n=131072）下，各个优化版本都展现出显著的性能优势：优化串行版本相比基础串行版本提升了约 910 倍，这一巨大提升主要来自于算法结构的优化，直接将复杂度从$O(n^2)$降为$O(n\cdot log(n))$。Montgomery 规约优化进一步将性能提升了约 27\%，SIMD 并行优化使性能又提升了约 13\%，虽然提升幅度不及前两次优化大，但在已经高度优化的代码基础上实现这样的提升仍然很有价值。
+
+\subsection{使用 perf 进行深入剖析}
+
+我们使用 perf 记录我们的并行优化代码对长为 32768 的多项式进行乘法运算的过程，并使用 perf 的 report 工具查看结果。表\ref{t2}记录了部分摘录与分析，也可参照火焰图\ref{fig:enter-label}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+Children & Self & Symbol & 分析与注释 \\ \hline
+99.64\% & 0.00\% & \texttt{\_start} $\rightarrow$ \texttt{\_\_libc\_start\_main} $\rightarrow$ \texttt{main} & 主程序（包括随机测试样例生成） \\ \hline
+89.13\% & 0.36\% & \texttt{poly\_multiply\_ntt\_simd} & 多项式乘法 \\ \hline
+47.64\% & 1.81\% & \texttt{ntt\_forward\_mont\_simd} & 正向 NTT \\ \hline
+42.93\% & \textbf{42.93\%} & \texttt{MontModNeon::reduce\_pair} & 热点之一：Montgomery reduction 双输入版 \\ \hline
+25.36\% & 0.91\% & \texttt{ntt\_inverse\_dit\_mont\_simd} & 逆向 NTT \\ \hline
+24.46\% & \textbf{24.46\%} & \texttt{MontModNeon::mul} & 热点之二：SIMD 版的模乘 \\ \hline
+8.51\% & 8.51\% & \texttt{bit\_reverse\_permute} & 位反转置换 \\ \hline
+5.43\% & 5.43\% & \texttt{MontMod::reduce} & 标准版的 Montgomery reduction \\ \hline
+5.07\% & 5.07\% & \texttt{MontModNeon::sub} & SIMD 的模减 \\ \hline
+3.99\% & 3.99\% & \texttt{MontModNeon::add} & SIMD 的模加 \\ \hline
+\end{tabular}
+\caption{perf 分析结果}
+\label{t2}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{image/3.png}
+    \caption{perf 分析结果的火焰图表示}
+    \label{fig:enter-label}
+\end{figure}
+
+可以看到，\texttt{MontModNeon::reduce\_pair}和\texttt{MontModNeon::mul}所占用的运行时间是最多的。
+
+我们不难理解\texttt{MontModNeon::mul}占用时间较长（因为多项式乘法本身便会用到大量的乘法）。事实上，由于\texttt{MontModNeon::mul}会调用\texttt{MontModNeon::reduce\_pair}，后者占用时间较长也不难理解。
+
+下面我们分析\texttt{MontModNeon::reduce\_pair}占用时间长的原因：
+
+\subsubsection{逻辑复杂度}
+
+在 \texttt{reduce\_pair} 里，实际执行的操作很多：
 
 \begin{itemize}
-    \item 不同阶段的 SIMD 优化效果
-    \item 不同输入规模下的性能变化
-    \item 向量化与串行代码的总体对比
+    \item \texttt{vmovn\_u64}：64 位降到 32 位
+    \item \texttt{vmul\_u32}：乘法
+    \item \texttt{vmlal\_u32}：64 位加乘（multiply-accumulate）
+    \item \texttt{vshrn\_n\_u64}：右移
+    \item \texttt{vcgeq\_u32}：比较
+    \item \texttt{vandq\_u32}：按位与
+    \item \texttt{vsubq\_u32}：减法
 \end{itemize}
 
-本部分将在实验完成后进一步补充具体的性能测试结果和分析。
+不仅如此，其中，\texttt{vmlal\_u32}和\texttt{vshrn\_n\_u64}耗时都较长。
+
+另一方面，\texttt{vcgeq\_u32}、\texttt{vandq\_u32}和\texttt{vsubq\_u32}构成逻辑判断，使依赖关系变得复杂，产生了内部数据依赖，导致流水线阻塞。
+
+\subsubsection{内部数据依赖导致流水线阻塞}
+
+从指令链看，\texttt{reduce\_pair}是顺序依赖非常密集的：
+
+\begin{itemize}
+    \item 要先 \texttt{vmovn}（截断低 32 位），才能 \texttt{vmul}（乘 neg\_r\_inv）
+    \item 要 \texttt{vmlal}（t + m$\times$mod），然后才能 \texttt{vshrn}（右移）
+    \item 要 \texttt{vshrn} 之后才能做比较、条件修正
+\end{itemize}
+
+因为没有办法把这些阶段并行展开，所以 CPU 在执行这段的时候，流水线容易空转等待。
+
+\subsubsection{结论}
+
+\texttt{MontModNeon::reduce\_pair} 之所以占用这么多时间，既有逻辑复杂度高的原因，也有数据强依赖导致的流水线阻塞的原因。
+
+由于这里的各个操作无法化简，要想进一步提升程序效率，我们可以从流水线重排的角度解决流水线阻塞的问题。不过这就超出我们 SIMD 实验的范畴了，我们在此不做进一步优化。
 
 \end{document}

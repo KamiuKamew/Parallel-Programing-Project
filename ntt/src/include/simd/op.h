@@ -33,15 +33,11 @@ public:
         u64x2 t1 = vmull_u32(vget_high_u32(a), vdup_n_u32(r2));
         return reduce_pair(t0, t1);
     }
-    u32x4 to_u32x4(u32x4_mont a_mont) const { return reduce(a_mont); }
 
-    // SIMD版 Montgomery规约
-    u32x4_mont reduce(u32x4 t_lo) const
+    u32x4 to_u32x4(u32x4_mont a_mont) const
     {
-        // t_lo 是低32位，高32位补0，提升成64位
-        u64x2 t0 = vmovl_u32(vget_low_u32(t_lo));
-        u64x2 t1 = vmovl_u32(vget_high_u32(t_lo));
-
+        u64x2 t0 = vmovl_u32(vget_low_u32(a_mont));
+        u64x2 t1 = vmovl_u32(vget_high_u32(a_mont));
         return reduce_pair(t0, t1);
     }
 
