@@ -52,7 +52,7 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
     for (u32 i = 0; i < n_simd; ++i)
         ab_mont_simd[i] = montModNeon.mul(a_mont_simd[i], b_mont_simd[i]);
 
-    ntt_inverse_dit_mont_simd(ab_mont_simd, n_expanded, p, montMod.inv(omega_mont));
+    ntt_inverse_mont_simd(ab_mont_simd, n_expanded, p, montMod.inv(omega_mont));
 
     for (u32 i = 0; i < n_simd; ++i)
         ab_simd[i] = montModNeon.to_u32x4(ab_mont_simd[i]); // 消除 mont

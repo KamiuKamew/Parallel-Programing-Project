@@ -515,8 +515,8 @@
 <text  x="902.28" y="47.5" ></text>
 </g>
 <g >
-<title>ntt_inverse_dit_mont_simd (70,000,000 samples, 25.36%)</title><rect x="886.4" y="69" width="299.3" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
-<text  x="889.45" y="79.5" >ntt_inverse_dit_mont_simd</text>
+<title>ntt_inverse_mont_simd (70,000,000 samples, 25.36%)</title><rect x="886.4" y="69" width="299.3" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="889.45" y="79.5" >ntt_inverse_mont_simd</text>
 </g>
 <g >
 <title>MontModNeon::from_u32x4 (3,000,000 samples, 1.09%)</title><rect x="193.8" y="69" width="12.9" height="15.0" fill="rgb(245,187,44)" rx="2" ry="2" />

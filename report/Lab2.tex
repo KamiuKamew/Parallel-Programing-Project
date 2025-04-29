@@ -150,7 +150,7 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
 
 实际上，这次实验的过程非常曲折，代码重构了很多次。如果按照实际实验顺序撰写报告，报告内容会乱成一团，可能在做着并行的时候又跑去改串行代码了；而如果按照基础-进阶的顺序撰写报告，则会出现"报告前半部分的某处代码是由后半部分的另一处代码改进而来"这样的"倒叙"结构，观感较差。
 
-因此，我打算重排讲解顺序，按照"基础串行代码——便于并行化的串行代码——封装基本并行运算——并行化代码"的顺序撰写。最后，我们统一分析各个步骤带来的性能提升，以及使用 perf 工具进行深入剖析。
+因此，我打算重排讲解顺序，按照"基础串行代码（此处已实现Montgomery规约模运算以及DIF的逆变换）——便于并行化的串行代码——封装基本并行运算——并行化代码"的顺序撰写。最后，我们统一分析各个步骤带来的性能提升，以及使用 perf 工具进行深入剖析。
 
 \paragraph{问题描述} 多项式乘法作为基础的数学运算，在信号处理、计算机图形学、密码学等领域有着广泛应用。特别是在同态加密领域，多项式乘法是核心运算之一。设两个多项式$f(x) = a_{n-1}x^{n-1} + \ldots + a_1x + a_0$和$g(x) = b_{m-1}x^{m-1} + \ldots + b_1x + b_0$，它们的乘积$h(x) = f(x)g(x)$中，系数$h_k = \sum_{i=0}^{k} a_i b_{k-i}$。
 
@@ -180,7 +180,7 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
 
 \section{基础串行代码}
 
-我们首先实现了基本的 Montgomery 规约的模运算，并基于它实现了 NTT 前向与逆向变换，最后组装成多项式乘法函数。为此，我们实现了三个头文件\texttt{op.h}、\texttt{transform.h}和\texttt{ntt.h}，各个头文件及其包含的函数如下：
+我们首先实现了基本的 Montgomery 规约的模运算，并基于它实现了 NTT 前向（DIT式）与逆向（DIF式）变换，最后组装成多项式乘法函数。为此，我们实现了三个头文件\texttt{op.h}、\texttt{transform.h}和\texttt{ntt.h}，各个头文件及其包含的函数如下：
 
 \begin{itemize}
     \item \texttt{op.h}：将基于 Montgomery 规约的模运算（加、减、乘、快速幂、数论倒数）封装为\texttt{MontMod}类，各个成员函数的简要介绍如下。具体实现细节此处不做展示，但我们将在\hyperref[sec:parallel_ops]{封装基本并行运算}里展示其并行版本。
@@ -251,9 +251,9 @@ for (u32 i = 0; i < n; ++i)
 
 这个函数不适合 SIMD 优化，因为其内存访问模式不连续，且每次操作依赖于计算结果，无法批量并行处理。
 
-\subsection{ntt\_forward\_mont}
+\subsection{ntt\_forward\_mont：基于 DIT 的正变换}
 
-\texttt{ntt\_forward\_mont}实现了基于 Montgomery 规约的 NTT 正变换。NTT 正变换将多项式从系数表示转换为点值表示，其核心是蝶形运算。
+\texttt{ntt\_forward_mont} 实现了基于 Montgomery 规约的 NTT 正变换。我们采用了 DIT（Decimation-In-Time）结构的正变换，将多项式从系数表示转换为点值表示，其核心是蝶形运算。
 
 函数的基本结构是三层嵌套循环：
 
@@ -275,12 +275,12 @@ for (u32 mid = 1; mid < n; mid <<= 1)
 其中：
 
 \begin{itemize}
-  \item 第一层循环控制变量\texttt{mid}表示当前蝶形运算的步长，从 1 开始倍增到 n/2
-  \item 第二层循环控制变量\texttt{j}表示当前处理的起始位置，每次跳过两个\texttt{mid}的长度
-  \item 第三层循环控制变量\texttt{k}在当前步长\texttt{mid}内进行迭代，同时计算旋转因子\texttt{w}
+  \item 第一层循环控制变量 \texttt{mid} 表示当前蝶形运算的步长，从 1 开始倍增到 n/2；
+  \item 第二层循环控制变量 \texttt{j} 表示当前处理的起始位置，每次跳过两个 \texttt{mid} 的长度；
+  \item 第三层循环控制变量 \texttt{k} 在当前步长 \texttt{mid} 内进行迭代，同时计算旋转因子 \texttt{w}。
 \end{itemize}
 
-蝶形运算的核心计算如下：
+蝶形运算的核心计算如下（先乘旋转因子，再做加减）：
 
 \begin{lstlisting}[language=C++]
 u32_mont x_mont = a_mont[j + k];
@@ -289,23 +289,25 @@ a_mont[j + k] = montMod.add(x_mont, y_mont);
 a_mont[j + k + mid] = montMod.sub(x_mont, y_mont);
 \end{lstlisting}
 
-这里使用 Montgomery 域中的加法、减法和乘法运算，避免了直接的模运算，提高了计算效率。每次蝶形运算都会将\texttt{a[j+k]}和\texttt{a[j+k+mid]}更新为它们的和与差（后者还需要乘以旋转因子）。
+这里使用 Montgomery 域中的加法、减法和乘法运算，避免了直接的模运算，提高了计算效率。每次蝶形运算都会将 \texttt{a[j+k]} 和 \texttt{a[j+k+mid]} 更新为它们的和与差（后者还需要乘以旋转因子），符合 DIT 结构的标准流程。
 
-\subsection{ntt\_inverse\_mont}
+\subsection{ntt\_inverse\_mont：基于 DIF 的逆变换}
 
-\texttt{ntt\_inverse\_mont}实现了基于 Montgomery 规约的 NTT 逆变换，将点值表示转换回系数表示。逆变换与正变换有几个关键区别：
+\texttt{ntt\_inverse_mont} 实现了基于 Montgomery 规约的 NTT 逆变换。与正向变换不同，我们采用了 DIF（Decimation-In-Frequency）结构来实现逆变换，将点值表示转换回系数表示。
+
+逆变换与正变换有几个关键区别：
 
 \paragraph{循环方向相反}
 
-正变换从小到大(mid 从 1 到 n/2)，逆变换从大到小(mid 从 n/2 到 1)
+正变换 DIT 中，\texttt{mid} 从小到大（1 到 n/2）；而逆变换 DIF 中，\texttt{mid} 从大到小（n/2 到 1）：
 
 \begin{lstlisting}[language=C++]
 for (u32 mid = n >> 1; mid > 0; mid >>= 1)
 \end{lstlisting}
 
-\paragraph{蝶形运算的公式不同}
+\paragraph{蝶形运算顺序不同}
 
-逆变换中，加法部分相同，但减法结果需要乘以旋转因子后才赋给 a[j+k+mid]
+在逆变换中，首先执行加法和减法，然后对减法结果乘以旋转因子：
 
 \begin{lstlisting}[language=C++]
 u32_mont x_mont = a_mont[j + k];
@@ -314,9 +316,11 @@ a_mont[j + k] = montMod.add(x_mont, y_mont);
 a_mont[j + k + mid] = montMod.mul(w_mont, montMod.sub(x_mont, y_mont));
 \end{lstlisting}
 
-\paragraph{需要除以 n}
+这与正向变换的 DIT 方式（先乘旋转因子，再加减）相反。
 
-（在有限域中即乘以 n 的模逆元）
+\paragraph{需要归一化}
+
+在有限域中，逆变换完成后需要除以 n，即乘以 n 的模逆元：
 
 \begin{lstlisting}[language=C++]
 u32_mont inv_n = montMod.inv(montMod.from_u32(n));
@@ -324,9 +328,9 @@ for (u32 i = 0; i < n; ++i)
   a_mont[i] = montMod.mul(a_mont[i], inv_n);
 \end{lstlisting}
 
-\paragraph{旋转因子计算方式}
+\paragraph{旋转因子取法不同}
 
-也与正变换略有不同，使用了原根的逆：
+逆变换中，旋转因子仍需基于原根计算，但取的是原根的逆元素：
 
 \begin{lstlisting}[language=C++]
 u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
@@ -389,7 +393,7 @@ for (u32 i = 0; i < n_expanded; ++i)
 ：
 
 \begin{lstlisting}[language=C++]
-ntt_inverse_dit_mont(ab_mont, n_expanded, p, montMod.inv(omega_mont));
+ntt_inverse_mont(ab_mont, n_expanded, p, montMod.inv(omega_mont));
 \end{lstlisting}
 
 \paragraph{将结果从 Montgomery 域转回普通域并返回}
@@ -810,7 +814,7 @@ Children & Self & Symbol & 分析与注释 \\ \hline
 89.13\% & 0.36\% & \texttt{poly\_multiply\_ntt\_simd} & 多项式乘法 \\ \hline
 47.64\% & 1.81\% & \texttt{ntt\_forward\_mont\_simd} & 正向 NTT \\ \hline
 42.93\% & \textbf{42.93\%} & \texttt{MontModNeon::reduce\_pair} & 热点之一：Montgomery reduction 双输入版 \\ \hline
-25.36\% & 0.91\% & \texttt{ntt\_inverse\_dit\_mont\_simd} & 逆向 NTT \\ \hline
+25.36\% & 0.91\% & \texttt{ntt\_inverse\_mont\_simd} & 逆向 NTT \\ \hline
 24.46\% & \textbf{24.46\%} & \texttt{MontModNeon::mul} & 热点之二：SIMD 版的模乘 \\ \hline
 8.51\% & 8.51\% & \texttt{bit\_reverse\_permute} & 位反转置换 \\ \hline
 5.43\% & 5.43\% & \texttt{MontMod::reduce} & 标准版的 Montgomery reduction \\ \hline
