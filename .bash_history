@@ -303,3 +303,65 @@ cd "/home/s2312237/ntt/src/test/output"
 cd "/home/s2312237/ntt/src/test/output"
 ./"test_ntt_inverse_simd"
 . "\home\s2312237\.cursor-server\cli\servers\Stable-fd861c8a80c0f9e4e35294b1915ee8a7b29ae850\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+cd ntt
+bash test.sh 1 1
+bash test.sh 3 1
+cd ntt
+perf stat -g --call-graph dwarf -o build/perf_gen.data ./build/test-generator -n 1024 -iter 100 -simd
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
+cd "/home/s2312237/ntt/src/test/output"
+./"test_ntt_simd"
+cd "/home/s2312237/ntt/src/test/output"
+./"test_ntt_simd"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
+cd "/home/s2312237/ntt/src/test/output"
+./"test_ntt_simd"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
+cd ntt
+cd src
+cd test
+cd ntt && ls
+cd ntt && g++ -g -O2 src/test/test-case-1.cpp -o build/test-case-1-perf
+g++ -g -O2 src/test/test-case-1.cpp -o build/test-case-1-perf
+cd ntt && g++ -g -O2 src/test/test-case-1.cpp -o build/test-case-1-perf
+g++ -g -O2 src/test/test-case-1.cpp -o build/test-case-1-perf
+cd ntt && perf record -g -o build/perf.data build/test-case-1-perf
+perf record -g -o build/perf.data build/test-case-1-perf
+perf report -i build/perf.data | cat
+perf record -g --call-graph dwarf -o build/perf_simd.data build/test-case-1-perf -e cycles:u -F 997
+cd ntt && g++ -g -O2 src/test/test-generator.cpp -o build/test-generator
+g++ -g -O2 src/test/test-generator.cpp -o build/test-generator
+./build/test-generator --help
+./build/test-generator -n 16 -iter 1000 -all -verify
+perf record -g --call-graph dwarf -o build/perf_gen.data ./build/test-generator -n 1024 -iter 100 -simd
+perf report -i build/perf_gen.data --stdio | head -n 100
+./build/test-generator -n 1024 -iter 50 -all
+./build/test-generator -n 4096 -iter 10 -all
+ls
+cd && git clone https://github.com/brendangregg/FlameGraph.git
+df -h
+cd /tmp && git clone https://github.com/brendangregg/FlameGraph.git
+cd /home/s2312237/ntt
+perf script -i build/perf_gen.data > build/perf_gen_stacks.txt
+which inferno-collapse-perf 2>/dev/null || echo "Inferno not installed"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+perf stat ./test-generator
+perf record -e cpu-clock -g  ./test-generator
+perf report -i perf.data
+perf script > out.perf
+./FlameGraph/stackcollapse-perf.pl out.perf > out.folded
+perf script -i perf.data &> perf.unfold
+./stackcollapse-perf.pl perf.unfold &> perf.folded
+git clone https://github.com/brendangregg/FlameGraph.git
