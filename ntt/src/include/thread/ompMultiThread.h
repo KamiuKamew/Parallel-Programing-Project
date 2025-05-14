@@ -150,6 +150,7 @@ inline void ntt_forward_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont
     for (u32 mid = 1; mid < n; mid <<= 1)
     {
         u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+#pragma omp parallel for
         for (u32 j = 0; j < n; j += (mid << 1))
         {
             u32_mont w_mont = montMod.from_u32(1);
@@ -181,6 +182,7 @@ inline void ntt_inverse_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont
     for (u32 mid = n >> 1; mid > 0; mid >>= 1)
     {
         u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
+#pragma omp parallel for
         for (u32 j = 0; j < n; j += (mid << 1))
         {
             u32_mont w_mont = montMod.from_u32(1);
