@@ -3,15 +3,13 @@
 #include <fstream>
 #include <string>
 #include <chrono>
-#include <numeric>
 #include <algorithm>
-#include <iomanip>
 #include <cmath>  // For std::isspace in C++98 mode, or for general use
 #include <cctype> // For std::isspace with a specific locale if needed
 
 // Assuming basicMultiThread.h is in ntt/src/include/thread/
 // Relative path from ntt/src/test/ to ntt/src/include/thread/ is ../include/thread/
-#include "../include/thread/basicMultiThread.h"
+#include "../include/OpenMP/ntt.h"
 
 // Function to read a polynomial from an input stream
 bool read_poly(std::ifstream &ifs, int n, std::vector<int> &poly)
@@ -109,7 +107,7 @@ int main(int argc, char *argv[])
     auto start_time = std::chrono::high_resolution_clock::now();
     if (actual_n_for_poly_multiply > 0)
     {
-        poly_multiply_ntt(poly_a_int.data(), poly_b_int.data(), result_coeffs_int.data(), actual_n_for_poly_multiply, p_modulus);
+        poly_multiply_ntt_omp(poly_a_int.data(), poly_b_int.data(), result_coeffs_int.data(), actual_n_for_poly_multiply, p_modulus);
     }
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
