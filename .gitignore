@@ -8,7 +8,7 @@ ntt/main
 ntt/test.o
 ntt/test.e
 ntt/files/*.out
-
+ntt/files/.*/
 output/
 
 FlameGraph/

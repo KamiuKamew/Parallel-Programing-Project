@@ -369,3 +369,21 @@ cd ntt
 bash test.sh 1 1
 . "\home\s2312237\.cursor-server\cli\servers\Stable-8ea935e79a50a02da912a034bbeda84a6d3d3550\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
 diff /home/s2312237/ntt/files/crt/1.out /home/s2312237/ntt/files/simple/1.out
+bash run.sh
+. "\home\s2312237\.cursor-server\cli\servers\Stable-8ea935e79a50a02da912a034bbeda84a6d3d3550\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+g++ ntt/src/test/test-generator.cpp -I ntt/src/include -o ntt/src/test/test_generator_executable -O2 -std=c++11 && ntt/src/test/test_generator_executable
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-generator"
+bash run.sh

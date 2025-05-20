@@ -3,8 +3,6 @@
 #include "general/utils.h"
 #include "transform.h"
 
-#define OMEGA 3 // 998244353 的原根
-
 /**
  * @brief 使用NTT优化的多项式乘法
  *
@@ -14,7 +12,7 @@
  * @param n 多项式长度
  * @param p 模数（质数）
  */
-inline void poly_multiply_ntt(int *a, int *b, int *ab, int n, int p)
+inline void poly_multiply_ntt(int *a, int *b, int *ab, int n, int p, int OMEGA = 3)
 {
   MontMod montMod(p);
 

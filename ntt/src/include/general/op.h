@@ -33,6 +33,36 @@ private:
   u32 mod;
 };
 
+class Mod128
+{
+public:
+  Mod128(u128 _mod) : mod(_mod) {}
+  Mod128(const Mod128 &) = delete;
+  Mod128 &operator=(const Mod128 &) = delete;
+
+  u128 add(u128 a, u128 b) const { return (a + b) % mod; }
+  u128 sub(u128 a, u128 b) const { return (a >= b) ? (a - b) : (a + mod - b); }
+  u128 mul(u128 a, u128 b) const { return (a * b) % mod; } // TODO：a * b 可能溢出
+  u128 pow(u128 base, u128 exp) const
+  {
+    u128 result = 1;
+    while (exp > 0)
+    {
+      if (exp & 1)
+      {
+        result = mul(result, base);
+      }
+      base = mul(base, base);
+      exp >>= 1;
+    }
+    return result;
+  }
+  u128 inv(u128 x) const { return pow(x, mod - 2); }
+
+private:
+  u128 mod;
+};
+
 // === Montgomery 模运算 ===
 class MontMod
 {
