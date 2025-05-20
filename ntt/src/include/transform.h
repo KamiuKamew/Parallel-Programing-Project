@@ -12,20 +12,21 @@
  * @param p 模数
  * @param omega 原根
  */
-inline void ntt_forward(u32 *a, u32 n, u32 p, u32 omega)
+template <typename T>
+inline void ntt_forward(T *a, T n, T p, T omega)
 {
-  Mod mod(p);
+  Mod<T> mod(p);
 
-  for (u32 mid = 1; mid < n; mid <<= 1)
+  for (T mid = 1; mid < n; mid <<= 1)
   {
-    u32 Wn = mod.pow(omega, (p - 1) / (mid << 1));
-    for (u32 j = 0; j < n; j += (mid << 1))
+    T Wn = mod.pow(omega, (p - 1) / (mid << 1));
+    for (T j = 0; j < n; j += (mid << 1))
     {
-      u32 w = 1;
-      for (u32 k = 0; k < mid; ++k, w = mod.mul(w, Wn))
+      T w = 1;
+      for (T k = 0; k < mid; ++k, w = mod.mul(w, Wn))
       {
-        u32 x = a[j + k];
-        u32 y = mod.mul(w, a[j + k + mid]);
+        T x = a[j + k];
+        T y = mod.mul(w, a[j + k + mid]);
         a[j + k] = mod.add(x, y);
         a[j + k + mid] = mod.sub(x, y);
       }
@@ -41,13 +42,14 @@ inline void ntt_forward(u32 *a, u32 n, u32 p, u32 omega)
  * @param p 模数
  * @param omega 原根
  */
-inline void ntt_inverse(u32 *a, u32 n, u32 p, u32 omega)
+template <typename T>
+inline void ntt_inverse(T *a, T n, T p, T omega)
 {
-  Mod mod(p);
+  Mod<T> mod(p);
 
   ntt_forward(a, n, p, mod.inv(omega));
 
-  for (u32 i = 0; i < n; ++i)
+  for (T i = 0; i < n; ++i)
     a[i] = mod.mul(a[i], mod.inv(n)); // 最后每个元素乘以 n 的逆元
 }
 
@@ -63,20 +65,23 @@ inline void ntt_inverse(u32 *a, u32 n, u32 p, u32 omega)
  * @param p 模数（普通整数）
  * @param omega_mont 原根（位于 Montgomery 数域）
  */
-inline void ntt_forward_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+template <typename T>
+inline void ntt_forward_mont(T *a_mont, T n, T p, T omega_mont)
 {
-  MontMod montMod(p);
+  using T_mont = T;
 
-  for (u32 mid = 1; mid < n; mid <<= 1)
+  MontMod<T> montMod(p);
+
+  for (T mid = 1; mid < n; mid <<= 1)
   {
-    u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
-    for (u32 j = 0; j < n; j += (mid << 1))
+    T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+    for (T j = 0; j < n; j += (mid << 1))
     {
-      u32_mont w_mont = montMod.from_u32(1);
-      for (u32 k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
+      T_mont w_mont = montMod.from_T(1);
+      for (T k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
       {
-        u32_mont x_mont = a_mont[j + k];
-        u32_mont y_mont = montMod.mul(w_mont, a_mont[j + k + mid]);
+        T_mont x_mont = a_mont[j + k];
+        T_mont y_mont = montMod.mul(w_mont, a_mont[j + k + mid]);
         a_mont[j + k] = montMod.add(x_mont, y_mont);
         a_mont[j + k + mid] = montMod.sub(x_mont, y_mont);
       }
@@ -84,21 +89,24 @@ inline void ntt_forward_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont
   }
 }
 
-inline void ntt_forward_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+template <typename T>
+inline void ntt_forward_mont_before_simd(T *a_mont, T n, T p, T omega_mont)
 {
-  MontMod montMod(p);
+  using T_mont = T;
 
-  for (u32 mid = 1; mid < n; mid <<= 1)
+  MontMod<T> montMod(p);
+
+  for (T mid = 1; mid < n; mid <<= 1)
   {
     switch (mid)
     {
     case 1:
     {
-      for (u32 j = 0; j < n; j += (mid << 1))
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont = montMod.from_u32(1);
-        u32_mont x_mont = a_mont[j];
-        u32_mont y_mont = montMod.mul(w_mont, a_mont[j + 1]);
+        T_mont w_mont = montMod.from_T(1);
+        T_mont x_mont = a_mont[j];
+        T_mont y_mont = montMod.mul(w_mont, a_mont[j + 1]);
         a_mont[j] = montMod.add(x_mont, y_mont);
         a_mont[j + 1] = montMod.sub(x_mont, y_mont);
       }
@@ -107,15 +115,15 @@ inline void ntt_forward_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
 
     case 2:
     {
-      u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
-      for (u32 j = 0; j < n; j += (mid << 1))
+      T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont_0 = montMod.from_u32(1);
-        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
-        u32_mont x_mont_0 = a_mont[j + 0];
-        u32_mont x_mont_1 = a_mont[j + 1];
-        u32_mont y_mont_0 = montMod.mul(w_mont_0, a_mont[j + 2]);
-        u32_mont y_mont_1 = montMod.mul(w_mont_1, a_mont[j + 3]);
+        T_mont w_mont_0 = montMod.from_T(1);
+        T_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        T_mont x_mont_0 = a_mont[j + 0];
+        T_mont x_mont_1 = a_mont[j + 1];
+        T_mont y_mont_0 = montMod.mul(w_mont_0, a_mont[j + 2]);
+        T_mont y_mont_1 = montMod.mul(w_mont_1, a_mont[j + 3]);
         a_mont[j + 0] = montMod.add(x_mont_0, y_mont_0);
         a_mont[j + 1] = montMod.add(x_mont_1, y_mont_1);
         a_mont[j + 2] = montMod.sub(x_mont_0, y_mont_0);
@@ -126,25 +134,25 @@ inline void ntt_forward_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
 
     default: // mid >= 4, parallelizable
     {
-      u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
-      for (u32 j = 0; j < n; j += (mid << 1))
+      T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont_0 = montMod.from_u32(1);
-        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
-        u32_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
-        u32_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
-        u32_mont Wn_mont_4 = montMod.pow(Wn_mont, 4);
-        for (u32 k = 0; k < mid; k += 4)
+        T_mont w_mont_0 = montMod.from_T(1);
+        T_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        T_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
+        T_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
+        T_mont Wn_mont_4 = montMod.pow(Wn_mont, 4);
+        for (T k = 0; k < mid; k += 4)
         {
-          u32_mont x_mont_0 = a_mont[j + k + 0];
-          u32_mont x_mont_1 = a_mont[j + k + 1];
-          u32_mont x_mont_2 = a_mont[j + k + 2];
-          u32_mont x_mont_3 = a_mont[j + k + 3];
+          T_mont x_mont_0 = a_mont[j + k + 0];
+          T_mont x_mont_1 = a_mont[j + k + 1];
+          T_mont x_mont_2 = a_mont[j + k + 2];
+          T_mont x_mont_3 = a_mont[j + k + 3];
 
-          u32_mont y_mont_0 = montMod.mul(w_mont_0, a_mont[j + k + mid + 0]);
-          u32_mont y_mont_1 = montMod.mul(w_mont_1, a_mont[j + k + mid + 1]);
-          u32_mont y_mont_2 = montMod.mul(w_mont_2, a_mont[j + k + mid + 2]);
-          u32_mont y_mont_3 = montMod.mul(w_mont_3, a_mont[j + k + mid + 3]);
+          T_mont y_mont_0 = montMod.mul(w_mont_0, a_mont[j + k + mid + 0]);
+          T_mont y_mont_1 = montMod.mul(w_mont_1, a_mont[j + k + mid + 1]);
+          T_mont y_mont_2 = montMod.mul(w_mont_2, a_mont[j + k + mid + 2]);
+          T_mont y_mont_3 = montMod.mul(w_mont_3, a_mont[j + k + mid + 3]);
 
           a_mont[j + k + 0] = montMod.add(x_mont_0, y_mont_0);
           a_mont[j + k + 1] = montMod.add(x_mont_1, y_mont_1);
@@ -178,47 +186,53 @@ inline void ntt_forward_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
  * @param p 模数
  * @param omega_mont 原根，已经是正变换的 ω，在调用时传 montMod.inv(omega_mont)
  */
-inline void ntt_inverse_mont(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+template <typename T>
+inline void ntt_inverse_mont(T *a_mont, T n, T p, T omega_mont)
 {
-  MontMod montMod(p);
+  using T_mont = T;
 
-  for (u32 mid = n >> 1; mid > 0; mid >>= 1)
+  MontMod<T> montMod(p);
+
+  for (T mid = n >> 1; mid > 0; mid >>= 1)
   {
-    u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
-    for (u32 j = 0; j < n; j += (mid << 1))
+    T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
+    for (T j = 0; j < n; j += (mid << 1))
     {
-      u32_mont w_mont = montMod.from_u32(1);
-      for (u32 k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
+      T_mont w_mont = montMod.from_T(1);
+      for (T k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
       {
-        u32_mont x_mont = a_mont[j + k];
-        u32_mont y_mont = a_mont[j + k + mid];
+        T_mont x_mont = a_mont[j + k];
+        T_mont y_mont = a_mont[j + k + mid];
         a_mont[j + k] = montMod.add(x_mont, y_mont);
         a_mont[j + k + mid] = montMod.mul(w_mont, montMod.sub(x_mont, y_mont));
       }
     }
   }
 
-  u32_mont inv_n = montMod.inv(montMod.from_u32(n));
-  for (u32 i = 0; i < n; ++i)
+  T_mont inv_n = montMod.inv(montMod.from_T(n));
+  for (T i = 0; i < n; ++i)
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
 }
 
-inline void ntt_inverse_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mont omega_mont)
+template <typename T>
+inline void ntt_inverse_mont_before_simd(T *a_mont, T n, T p, T omega_mont)
 {
-  MontMod montMod(p);
+  using T_mont = T;
 
-  for (u32 mid = n >> 1; mid > 0; mid >>= 1)
+  MontMod<T> montMod(p);
+
+  for (T mid = n >> 1; mid > 0; mid >>= 1)
   {
-    u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
+    T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1)); // Wn = ω⁻¹^((p-1)/(2*mid))
     switch (mid)
     {
     case 1:
     {
-      for (u32 j = 0; j < n; j += (mid << 1))
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont = montMod.from_u32(1);
-        u32_mont x_mont = a_mont[j + 0];
-        u32_mont y_mont = a_mont[j + 1];
+        T_mont w_mont = montMod.from_T(1);
+        T_mont x_mont = a_mont[j + 0];
+        T_mont y_mont = a_mont[j + 1];
         a_mont[j + 0] = montMod.add(x_mont, y_mont);
         a_mont[j + 1] = montMod.mul(w_mont, montMod.sub(x_mont, y_mont));
       }
@@ -227,14 +241,14 @@ inline void ntt_inverse_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
 
     case 2:
     {
-      for (u32 j = 0; j < n; j += (mid << 1))
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont_0 = montMod.from_u32(1);
-        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
-        u32_mont x_mont_0 = a_mont[j + 0];
-        u32_mont x_mont_1 = a_mont[j + 1];
-        u32_mont y_mont_0 = a_mont[j + 2];
-        u32_mont y_mont_1 = a_mont[j + 3];
+        T_mont w_mont_0 = montMod.from_T(1);
+        T_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        T_mont x_mont_0 = a_mont[j + 0];
+        T_mont x_mont_1 = a_mont[j + 1];
+        T_mont y_mont_0 = a_mont[j + 2];
+        T_mont y_mont_1 = a_mont[j + 3];
         a_mont[j + 0] = montMod.add(x_mont_0, y_mont_0);
         a_mont[j + 1] = montMod.add(x_mont_1, y_mont_1);
         a_mont[j + 2] = montMod.mul(w_mont_0, montMod.sub(x_mont_0, y_mont_0));
@@ -245,24 +259,24 @@ inline void ntt_inverse_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
 
     default: // mid >= 4, parallelizable
     {
-      for (u32 j = 0; j < n; j += (mid << 1))
+      for (T j = 0; j < n; j += (mid << 1))
       {
-        u32_mont w_mont_0 = montMod.from_u32(1);
-        u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
-        u32_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
-        u32_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
-        u32_mont Wn_mont_4 = montMod.pow(Wn_mont, 4);
-        for (u32 k = 0; k < mid; k += 4)
+        T_mont w_mont_0 = montMod.from_T(1);
+        T_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
+        T_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
+        T_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
+        T_mont Wn_mont_4 = montMod.pow(Wn_mont, 4);
+        for (T k = 0; k < mid; k += 4)
         {
-          u32_mont x_mont_0 = a_mont[j + k + 0];
-          u32_mont x_mont_1 = a_mont[j + k + 1];
-          u32_mont x_mont_2 = a_mont[j + k + 2];
-          u32_mont x_mont_3 = a_mont[j + k + 3];
+          T_mont x_mont_0 = a_mont[j + k + 0];
+          T_mont x_mont_1 = a_mont[j + k + 1];
+          T_mont x_mont_2 = a_mont[j + k + 2];
+          T_mont x_mont_3 = a_mont[j + k + 3];
 
-          u32_mont y_mont_0 = a_mont[j + k + mid + 0];
-          u32_mont y_mont_1 = a_mont[j + k + mid + 1];
-          u32_mont y_mont_2 = a_mont[j + k + mid + 2];
-          u32_mont y_mont_3 = a_mont[j + k + mid + 3];
+          T_mont y_mont_0 = a_mont[j + k + mid + 0];
+          T_mont y_mont_1 = a_mont[j + k + mid + 1];
+          T_mont y_mont_2 = a_mont[j + k + mid + 2];
+          T_mont y_mont_3 = a_mont[j + k + mid + 3];
 
           a_mont[j + k + 0] = montMod.add(x_mont_0, y_mont_0);
           a_mont[j + k + 1] = montMod.add(x_mont_1, y_mont_1);
@@ -285,7 +299,7 @@ inline void ntt_inverse_mont_before_simd(u32_mont *a_mont, u32 n, u32 p, u32_mon
     }
   }
 
-  u32_mont inv_n = montMod.inv(montMod.from_u32(n));
-  for (u32 i = 0; i < n; ++i)
+  T_mont inv_n = montMod.inv(montMod.from_T(n));
+  for (T i = 0; i < n; ++i)
     a_mont[i] = montMod.mul(a_mont[i], inv_n);
 }

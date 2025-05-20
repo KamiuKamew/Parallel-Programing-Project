@@ -20,11 +20,11 @@
 inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
 {
     MontModNeon montModNeon(p);
-    MontMod montMod(p);
+    MontMod<u32> montMod(p);
 
     u32 n_expanded = expand_n(2 * n - 1);
-    u32 *a_expanded = expand_a((u32 *)a, n, n_expanded);
-    u32 *b_expanded = expand_a((u32 *)b, n, n_expanded);
+    u32 *a_expanded = expand_a<u32>((u32 *)a, (u32)n, n_expanded);
+    u32 *b_expanded = expand_a<u32>((u32 *)b, (u32)n, n_expanded);
 
     bit_reverse_permute(a_expanded, n_expanded);
     bit_reverse_permute(b_expanded, n_expanded);
@@ -44,7 +44,7 @@ inline void poly_multiply_ntt_simd(int *a, int *b, int *ab, int n, int p)
         a_mont_simd[i] = montModNeon.from_u32x4(a_simd[i]);
     for (u32 i = 0; i < n_simd; ++i)
         b_mont_simd[i] = montModNeon.from_u32x4(b_simd[i]);
-    u32_mont omega_mont = montMod.from_u32(OMEGA);
+    u32_mont omega_mont = montMod.from_T(OMEGA);
 
     ntt_forward_mont_simd(a_mont_simd, n_expanded, p, omega_mont);
     ntt_forward_mont_simd(b_mont_simd, n_expanded, p, omega_mont);

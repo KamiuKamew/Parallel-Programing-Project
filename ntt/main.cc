@@ -11,7 +11,8 @@
 #include <sys/time.h>
 // #include <omp.h>
 
-void fRead(int *a, int *b, int *n, int *p, int input_id)
+template <typename T>
+void fRead(T *a, T *b, T *n, T *p, T input_id)
 {
   // 数据输入函数
   std::string str1 = "/nttdata/";
@@ -23,17 +24,18 @@ void fRead(int *a, int *b, int *n, int *p, int input_id)
   std::ifstream fin;
   fin.open(data_path, std::ios::in);
   fin >> *n >> *p;
-  for (int i = 0; i < *n; i++)
+  for (T i = 0; i < *n; i++)
   {
     fin >> a[i];
   }
-  for (int i = 0; i < *n; i++)
+  for (T i = 0; i < *n; i++)
   {
     fin >> b[i];
   }
 }
 
-void fCheck(int *ab, int n, int input_id)
+template <typename T>
+void fCheck(T *ab, T n, T input_id)
 {
   // 判断多项式乘法结果是否正确
   std::string str1 = "/nttdata/";
@@ -44,9 +46,9 @@ void fCheck(int *ab, int n, int input_id)
   data_path[strout.size()] = '\0';
   std::ifstream fin;
   fin.open(data_path, std::ios::in);
-  for (int i = 0; i < n * 2 - 1; i++)
+  for (T i = 0; i < n * 2 - 1; i++)
   {
-    int x;
+    T x;
     fin >> x;
     if (x != ab[i])
     {
@@ -58,7 +60,8 @@ void fCheck(int *ab, int n, int input_id)
   return;
 }
 
-void fWrite(int *ab, int n, int input_id)
+template <typename T>
+void fWrite(T *ab, T n, T input_id)
 {
   // 数据输出函数, 可以用来输出最终结果, 也可用于调试时输出中间数组
   std::string str1 = "files/";
@@ -69,26 +72,28 @@ void fWrite(int *ab, int n, int input_id)
   output_path[strout.size()] = '\0';
   std::ofstream fout;
   fout.open(output_path, std::ios::out);
-  for (int i = 0; i < n * 2 - 1; i++)
+  for (T i = 0; i < n * 2 - 1; i++)
   {
     fout << ab[i] << '\n';
   }
 }
 
-void poly_multiply(int *a, int *b, int *ab, int n, int p)
+template <typename T>
+void poly_multiply(T *a, T *b, T *ab, T n, T p)
 {
-  for (int i = 0; i < n; ++i)
+  for (T i = 0; i < n; ++i)
   {
-    for (int j = 0; j < n; ++j)
+    for (T j = 0; j < n; ++j)
     {
       ab[i + j] = (1LL * a[i] * b[j] % p + ab[i + j]) % p;
     }
   }
 }
 
-int a[300000], b[300000], ab[300000];
-int main(int argc, char *argv[])
+template <typename T>
+int _main(int argc, char *argv[])
 {
+  T a[300000], b[300000], ab[300000];
   // 保证输入的所有模数的原根均为 3, 且模数都能表示为 a \times 4 ^ k + 1 的形式
   // 输入模数分别为 7340033 104857601 469762049 263882790666241
   // 第四个模数超过了整型表示范围, 如果实现此模数意义下的多项式乘法需要修改框架
@@ -97,21 +102,21 @@ int main(int argc, char *argv[])
   // 第一个输入文件 n = 4, 其余四个文件分别对应四个模数, n = 131072
   // 在实现快速数论变化前, 后四个测试样例运行时间较久,
   // 推荐调试正确性时只使用输入文件 1
-  int test_begin = 0;
-  int test_end = 3;
-  for (int i = test_begin; i <= test_end; ++i)
+  T test_begin = 0;
+  T test_end = 4;
+  for (T i = test_begin; i <= test_end; ++i)
   {
     long double ans = 0;
-    int n_, p_;
+    T n_, p_;
     fRead(a, b, &n_, &p_, i);
     memset(ab, 0, sizeof(ab));
     auto Start = std::chrono::high_resolution_clock::now();
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    // poly_multiply_ntt(a, b, ab, n_, p_);
+    poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
-    poly_multiply_ntt_crt(a, b, ab, n_, p_);
+    // poly_multiply_ntt_crt(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;
@@ -123,5 +128,11 @@ int main(int argc, char *argv[])
     // 禁止使用 cout 一次性输出大量文件内容
     fWrite(ab, n_, i);
   }
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  _main<u64>(argc, argv);
   return 0;
 }

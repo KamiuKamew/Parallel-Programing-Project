@@ -3,26 +3,28 @@
 #include "type.h"
 
 /** 将 n 扩展为 2 的幂。 */
-inline u32 expand_n(u32 n)
+template <typename T>
+inline T expand_n(T n)
 {
-    u32 lg_n = 0;
+    T lg_n = 0;
     while ((1u << lg_n) < n)
         ++lg_n;
     return 1 << lg_n;
 }
 
 /** 将 a 的长度扩展为 2 的幂。 */
-inline u32 *expand_a(u32 *a, u32 n, u32 n_expanded)
+template <typename T>
+inline T *expand_a(T *a, T n, T n_expanded)
 {
     // 虽然但是，这里应该有一个检查n是不是2的幂的逻辑
     // 话又说回来，这样得用别的库
     // 然而我又不想用别的库
     // 所以这里就先不检查了
 
-    u32 *a_expanded = new u32[n_expanded];
-    for (u32 i = 0; i < n; ++i)
+    T *a_expanded = new T[n_expanded];
+    for (T i = 0; i < n; ++i)
         a_expanded[i] = a[i];
-    for (u32 i = n; i < n_expanded; ++i)
+    for (T i = n; i < n_expanded; ++i)
         a_expanded[i] = 0;
     return a_expanded;
 }
@@ -36,16 +38,17 @@ inline u32 *expand_a(u32 *a, u32 n, u32 n_expanded)
  * @param a 输入序列（是不是 Montgomery 数域无所谓）
  * @param n 序列长度（扩展过，是2的幂）
  */
-inline void bit_reverse_permute(u32 *a, u32 n)
+template <typename T>
+inline void bit_reverse_permute(T *a, T n)
 {
-    u32 lg_n = 0;
+    T lg_n = 0;
     while ((1u << lg_n) < n)
         ++lg_n;
 
-    for (u32 i = 0; i < n; ++i)
+    for (T i = 0; i < n; ++i)
     {
-        u32 j = 0;
-        for (u32 k = 0; k < lg_n; ++k)
+        T j = 0;
+        for (T k = 0; k < lg_n; ++k)
             if (i & (1 << k))
                 j |= (1 << (lg_n - 1 - k));
         if (i < j)

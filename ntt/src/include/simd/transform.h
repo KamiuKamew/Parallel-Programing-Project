@@ -15,7 +15,7 @@
  */
 inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mont omega_mont)
 {
-    MontMod montMod(p);
+    MontMod<u32> montMod(p);
     MontModNeon montModNeon(p);
 
     bool is_serial = false;
@@ -34,7 +34,7 @@ inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             }
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont = montMod.from_u32(1);
+                u32_mont w_mont = montMod.from_T(1);
                 u32_mont x_mont = a_mont[j];
                 u32_mont y_mont = montMod.mul(w_mont, a_mont[j + 1]);
                 a_mont[j] = montMod.add(x_mont, y_mont);
@@ -53,7 +53,7 @@ inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont_0 = montMod.from_u32(1);
+                u32_mont w_mont_0 = montMod.from_T(1);
                 u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
                 u32_mont x_mont_0 = a_mont[j + 0];
                 u32_mont x_mont_1 = a_mont[j + 1];
@@ -77,7 +77,7 @@ inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             u32_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont_0 = montMod.from_u32(1);
+                u32_mont w_mont_0 = montMod.from_T(1);
                 u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
                 u32_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
                 u32_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
@@ -143,7 +143,7 @@ inline void ntt_forward_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
  */
 inline void ntt_inverse_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mont omega_mont)
 {
-    MontMod montMod(p);
+    MontMod<u32> montMod(p);
     MontModNeon montModNeon(p);
 
     bool is_serial = false;
@@ -163,7 +163,7 @@ inline void ntt_inverse_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             }
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont = montMod.from_u32(1);
+                u32_mont w_mont = montMod.from_T(1);
                 u32_mont x_mont = a_mont[j + 0];
                 u32_mont y_mont = a_mont[j + 1];
                 a_mont[j + 0] = montMod.add(x_mont, y_mont);
@@ -181,7 +181,7 @@ inline void ntt_inverse_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             }
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont_0 = montMod.from_u32(1);
+                u32_mont w_mont_0 = montMod.from_T(1);
                 u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
                 u32_mont x_mont_0 = a_mont[j + 0];
                 u32_mont x_mont_1 = a_mont[j + 1];
@@ -204,7 +204,7 @@ inline void ntt_inverse_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
             }
             for (u32 j = 0; j < n; j += (mid << 1))
             {
-                u32_mont w_mont_0 = montMod.from_u32(1);
+                u32_mont w_mont_0 = montMod.from_T(1);
                 u32_mont w_mont_1 = montMod.mul(w_mont_0, Wn_mont);
                 u32_mont w_mont_2 = montMod.mul(w_mont_1, Wn_mont);
                 u32_mont w_mont_3 = montMod.mul(w_mont_2, Wn_mont);
@@ -257,7 +257,7 @@ inline void ntt_inverse_mont_simd(u32x4_mont *a_mont_simd, u32 n, u32 p, u32_mon
 
     delete[] a_mont;
 
-    u32_mont inv_n = montMod.inv(montMod.from_u32(n));
+    u32_mont inv_n = montMod.inv(montMod.from_T(n));
     u32x4_mont inv_n_simd = vdupq_n_u32(inv_n);
     for (u32 i = 0; i < n; i += 4)
         a_mont_simd[i / 4] = montModNeon.mul(a_mont_simd[i / 4], inv_n_simd);
