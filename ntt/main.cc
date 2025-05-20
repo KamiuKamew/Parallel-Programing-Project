@@ -1,5 +1,6 @@
 #include "src/include/ntt.h"
 #include "src/include/simd/ntt.h"
+#include "src/include/CRT/ntt.h"
 
 #include <chrono>
 #include <cstring>
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
   // 在实现快速数论变化前, 后四个测试样例运行时间较久,
   // 推荐调试正确性时只使用输入文件 1
   int test_begin = 0;
-  int test_end = 1;
+  int test_end = 3;
   for (int i = test_begin; i <= test_end; ++i)
   {
     long double ans = 0;
@@ -108,8 +109,9 @@ int main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    // poly_multiply_ntt(a, b, ab, n_, p_);
-    poly_multiply_ntt_simd(a, b, ab, n_, p_);
+    poly_multiply_ntt(a, b, ab, n_, p_);
+    // poly_multiply_ntt_simd(a, b, ab, n_, p_);
+    // poly_multiply_ntt_crt(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;

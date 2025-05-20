@@ -365,3 +365,7 @@ perf script > out.perf
 perf script -i perf.data &> perf.unfold
 ./stackcollapse-perf.pl perf.unfold &> perf.folded
 git clone https://github.com/brendangregg/FlameGraph.git
+cd ntt
+bash test.sh 1 1
+. "\home\s2312237\.cursor-server\cli\servers\Stable-8ea935e79a50a02da912a034bbeda84a6d3d3550\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+diff /home/s2312237/ntt/files/crt/1.out /home/s2312237/ntt/files/simple/1.out
