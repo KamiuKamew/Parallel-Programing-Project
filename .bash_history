@@ -387,3 +387,7 @@ cd "/home/s2312237/ntt/src/test/output"
 cd "/home/s2312237/ntt/src/test/output"
 ./"test-generator"
 bash run.sh
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
+cd "/home/s2312237/ntt/src/test/output"
+./"test-case-1"
