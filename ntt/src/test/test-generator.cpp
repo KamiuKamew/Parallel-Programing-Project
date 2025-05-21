@@ -1,5 +1,5 @@
 #include "../include/ntt.h"
-#include "../include/simd/ntt.h"
+#include "../include/CRT/ntt.h"
 
 #include <iostream>
 #include <vector>
@@ -53,7 +53,7 @@ void print_usage(const char *program_name)
               << "  -p <prime>      使用的模数 (默认: 998244353)\n"
               << "  -naive          执行朴素乘法\n"
               << "  -ntt            执行NTT乘法\n"
-              << "  -simd           执行SIMD优化的NTT乘法 (默认)\n"
+              << "  -crt           执行crt优化的NTT乘法 (默认)\n"
               << "  -all            执行所有算法并比较结果\n"
               << "  -verify         验证结果的正确性\n"
               << "  -h, --help      显示此帮助信息\n";
@@ -61,13 +61,13 @@ void print_usage(const char *program_name)
 
 int main(int argc, char *argv[])
 {
-    int n = 32768;          // 默认多项式大小
+    int n = 1024;           // 默认多项式大小
     int iterations = 1;     // 默认迭代次数
-    int p = 998244353;      // 默认模数
+    int p = 7340033;        // 默认模数
     bool run_naive = false; // 是否运行朴素算法
-    bool run_ntt = false;   // 是否运行普通NTT
-    bool run_simd = true;   // 默认运行SIMD NTT
-    bool verify = false;    // 是否验证结果
+    bool run_ntt = true;    // 是否运行普通NTT
+    bool run_crt = false;   // 默认运行crt NTT
+    bool verify = true;     // 是否验证结果
 
     // 解析命令行参数
     for (int i = 1; i < argc; ++i)
@@ -92,13 +92,13 @@ int main(int argc, char *argv[])
         {
             run_ntt = true;
         }
-        else if (strcmp(argv[i], "-simd") == 0)
+        else if (strcmp(argv[i], "-crt") == 0)
         {
-            run_simd = true;
+            run_crt = true;
         }
         else if (strcmp(argv[i], "-all") == 0)
         {
-            run_naive = run_ntt = run_simd = true;
+            run_naive = run_ntt = run_crt = true;
         }
         else if (strcmp(argv[i], "-verify") == 0)
         {
@@ -123,20 +123,31 @@ int main(int argc, char *argv[])
         n_expanded <<= 1;
 
     // 分配内存
-    int *a = new int[n_expanded];
-    int *b = new int[n_expanded];
+    int *a_int = new int[n_expanded];
+    int *b_int = new int[n_expanded];
     int *ab_naive = new int[n_expanded];
     int *ab_ntt = new int[n_expanded];
-    int *ab_ntt_simd = new int[n_expanded];
+    u64 *a_crt = new u64[n_expanded];
+    u64 *b_crt = new u64[n_expanded];
+    u64 *ab_ntt_crt_u64 = new u64[n_expanded];
+    int *ab_ntt_crt_int = new int[n_expanded];
 
     // 初始化结果数组
     std::memset(ab_naive, 0, n_expanded * sizeof(int));
     std::memset(ab_ntt, 0, n_expanded * sizeof(int));
-    std::memset(ab_ntt_simd, 0, n_expanded * sizeof(int));
+    std::memset(ab_ntt_crt_u64, 0, n_expanded * sizeof(u64));
+    std::memset(ab_ntt_crt_int, 0, n_expanded * sizeof(int));
 
     // 生成随机多项式
-    generate_random_polynomial(a, n, p);
-    generate_random_polynomial(b, n, p);
+    generate_random_polynomial(a_int, n, p);
+    generate_random_polynomial(b_int, n, p);
+
+    // Populate u64 versions for CRT
+    for (int i = 0; i < n_expanded; ++i)
+    {
+        a_crt[i] = static_cast<u64>(a_int[i]);
+        b_crt[i] = static_cast<u64>(b_int[i]);
+    }
 
     std::cout << "测试配置:\n";
     std::cout << "- 多项式大小: " << n << "\n";
@@ -151,7 +162,7 @@ int main(int argc, char *argv[])
         for (int iter = 0; iter < iterations; ++iter)
         {
             std::memset(ab_naive, 0, n_expanded * sizeof(int));
-            poly_multiply_naive(a, b, ab_naive, n, p);
+            poly_multiply_naive(a_int, b_int, ab_naive, n, p);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -159,6 +170,13 @@ int main(int argc, char *argv[])
 
         std::cout << "朴素乘法: " << duration / 1000.0 << " ms (平均每次 "
                   << duration / (double)iterations / 1000.0 << " ms)\n";
+
+        std::cout << "朴素乘法结果: ";
+        for (int i = 0; i < n_expanded; ++i)
+        {
+            std::cout << ab_naive[i] << " ";
+        }
+        std::cout << std::endl;
     }
 
     // 测试NTT乘法
@@ -169,7 +187,7 @@ int main(int argc, char *argv[])
         for (int iter = 0; iter < iterations; ++iter)
         {
             std::memset(ab_ntt, 0, n_expanded * sizeof(int));
-            poly_multiply_ntt(a, b, ab_ntt, n, p);
+            poly_multiply_ntt(a_int, b_int, ab_ntt, n, p);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -177,6 +195,13 @@ int main(int argc, char *argv[])
 
         std::cout << "NTT乘法: " << duration / 1000.0 << " ms (平均每次 "
                   << duration / (double)iterations / 1000.0 << " ms)\n";
+
+        std::cout << "NTT乘法结果: ";
+        for (int i = 0; i < n_expanded; ++i)
+        {
+            std::cout << ab_ntt[i] << " ";
+        }
+        std::cout << std::endl;
 
         // 验证与朴素乘法结果
         if (verify && run_naive)
@@ -186,40 +211,53 @@ int main(int argc, char *argv[])
         }
     }
 
-    // 测试SIMD NTT乘法
-    if (run_simd)
+    // 测试crt NTT乘法
+    if (run_crt)
     {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int iter = 0; iter < iterations; ++iter)
         {
-            std::memset(ab_ntt_simd, 0, n_expanded * sizeof(int));
-            poly_multiply_ntt_simd(a, b, ab_ntt_simd, n, p);
+            std::memset(ab_ntt_crt_u64, 0, n_expanded * sizeof(u64));
+            poly_multiply_ntt_crt(a_crt, b_crt, ab_ntt_crt_u64, n, p);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        std::cout << "SIMD NTT乘法: " << duration / 1000.0 << " ms (平均每次 "
+        // Convert u64 result to int for verification and printing
+        for (int i = 0; i < n_expanded; ++i)
+        {
+            ab_ntt_crt_int[i] = static_cast<int>(ab_ntt_crt_u64[i]);
+        }
+
+        std::cout << "crt NTT乘法: " << duration / 1000.0 << " ms (平均每次 "
                   << duration / (double)iterations / 1000.0 << " ms)\n";
+
+        std::cout << "crt NTT乘法结果: ";
+        for (int i = 0; i < n_expanded; ++i)
+        {
+            std::cout << ab_ntt_crt_int[i] << " ";
+        }
+        std::cout << std::endl;
 
         // 验证与朴素乘法结果
         if (verify && run_naive)
         {
-            bool valid = verify_results(ab_naive, ab_ntt_simd, n_expanded);
-            std::cout << "SIMD NTT结果验证: " << (valid ? "正确" : "不正确") << "\n";
+            bool valid = verify_results(ab_naive, ab_ntt_crt_int, n_expanded);
+            std::cout << "crt NTT结果验证: " << (valid ? "正确" : "不正确") << "\n";
         }
 
         // 验证与普通NTT结果
         if (verify && run_ntt)
         {
-            bool valid = verify_results(ab_ntt, ab_ntt_simd, n_expanded);
-            std::cout << "SIMD vs NTT结果验证: " << (valid ? "正确" : "不正确") << "\n";
+            bool valid = verify_results(ab_ntt, ab_ntt_crt_int, n_expanded);
+            std::cout << "crt vs NTT结果验证: " << (valid ? "正确" : "不正确") << "\n";
         }
     }
 
     // 如果使用了所有算法，打印结果以便比较
-    if (run_naive && run_ntt && run_simd && n <= 16)
+    if (run_naive && run_ntt && run_crt && n <= 16)
     {
         std::cout << "\n结果比较 (前" << std::min(n_expanded, 16) << "个元素):\n";
 
@@ -237,20 +275,23 @@ int main(int argc, char *argv[])
         }
         std::cout << "\n";
 
-        std::cout << "SIMD: ";
+        std::cout << "crt: ";
         for (int i = 0; i < std::min(n_expanded, 16); ++i)
         {
-            std::cout << ab_ntt_simd[i] << " ";
+            std::cout << ab_ntt_crt_int[i] << " ";
         }
         std::cout << "\n";
     }
 
     // 释放内存
-    delete[] a;
-    delete[] b;
+    delete[] a_int;
+    delete[] b_int;
     delete[] ab_naive;
     delete[] ab_ntt;
-    delete[] ab_ntt_simd;
+    delete[] a_crt;
+    delete[] b_crt;
+    delete[] ab_ntt_crt_u64;
+    delete[] ab_ntt_crt_int;
 
     return 0;
 }

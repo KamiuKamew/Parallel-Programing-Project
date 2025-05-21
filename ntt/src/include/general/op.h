@@ -72,25 +72,44 @@ class MontMod
 {
   using T_mont = T;
   using T2 = t_widen<T>;
+  static constexpr int mont_word_bits = sizeof(T) * 8;
 
 public:
   MontMod(T _mod) : mod(_mod)
   {
-    // 计算 r^2 mod mod，这里 r = 2^32
-    T2 r2_temp = 1;
-    for (int i = 0; i < 32; ++i)
-      r2_temp = (r2_temp << 1) % mod;
-    // 现在 r2_temp = 2^32 mod mod
-    r2 = (T2)r2_temp * r2_temp % mod; // r^2 = (2^32)^2 mod mod
+    // 计算 R^2 mod mod，这里 R = 2^mont_word_bits
+    // First, calculate R_mod_n = 2^mont_word_bits mod mod
+    T2 r_val_mod_n = 1;
+    for (int i = 0; i < mont_word_bits; ++i)
+      r_val_mod_n = (r_val_mod_n << 1) % mod;
+    // Now r_val_mod_n = 2^mont_word_bits mod mod
+    // Then r2 = (2^mont_word_bits mod mod)^2 mod mod = (2^mont_word_bits)^2 mod mod
+    r2 = (T2)r_val_mod_n * r_val_mod_n % mod;
 
-    // 计算 -mod^(-1) mod 2^32
-    // 即满足 r*r_inv - mod*m_inv = 1 (mod r)，其中r=2^32
+    // 计算 -mod^(-1) mod R (R = 2^mont_word_bits)
+    // 即满足 R*R_inv - mod*m_inv = 1 (mod R)
     T inv = 1;
-    // 牛顿迭代法求模逆
-    // 避免乘法溢出的方法是在32位计算中利用模2^32的特性
-    for (int i = 0; i < 5; ++i)
-      inv = (T)((T2)inv * (2 - (T2)mod * inv));
-    neg_r_inv = -inv;
+    // 牛顿迭代法求模逆 mod R
+    int inv_iterations;
+    if constexpr (mont_word_bits <= 2)
+      inv_iterations = 1;
+    else if constexpr (mont_word_bits <= 4)
+      inv_iterations = 2;
+    else if constexpr (mont_word_bits <= 8)
+      inv_iterations = 3;
+    else if constexpr (mont_word_bits <= 16)
+      inv_iterations = 4;
+    else if constexpr (mont_word_bits <= 32)
+      inv_iterations = 5;
+    else if constexpr (mont_word_bits <= 64)
+      inv_iterations = 6;
+    // else if constexpr (mont_word_bits <= 128) inv_iterations = 7; // For T=u128 if supported directly
+    else
+      inv_iterations = 5; // Fallback, though should ideally cover all expected T sizes or error.
+
+    for (int i = 0; i < inv_iterations; ++i)
+      inv = (T)((T2)inv * (2 - (T2)mod * inv)); // Result is inv mod 2^mont_word_bits
+    neg_r_inv = -inv;                           // This is (-inv) mod 2^mont_word_bits due to type T
   }
 
   MontMod(const MontMod &) = delete;
@@ -99,13 +118,17 @@ public:
   T_mont from_T(T a) const { return reduce((T2)a * r2); }
   T to_T(T_mont a_mont) const { return reduce((T2)a_mont); }
 
-  // Montgomery规约，计算 a * r^(-1) mod mod
+  // Montgomery规约，计算 t * R^(-1) mod mod, where R = 2^mont_word_bits
   T_mont reduce(T2 t) const
   {
-    T m = (T)t * neg_r_inv;
+    // m = (t mod R) * (-mod^(-1) mod R) mod R
+    T m = (T)t * neg_r_inv; // (T)t performs t mod R; result m is also mod R
+    // tmp = t + m*mod. tmp must be divisible by R.
     T2 tmp = t + (T2)m * mod;
-    T_mont res = (T)(tmp >> 32);
-    res = res - (mod & -(res >= mod));
+    // res_intermediate = tmp / R. This result should be < 2*mod.
+    T_mont res = (T)(tmp >> mont_word_bits);
+    // Ensure result is in [0, mod-1]
+    res = res - (mod & -(res >= mod)); // if (res >= mod) res -= mod;
     return res;
   }
 
@@ -135,6 +158,6 @@ public:
 
 private:
   T mod;       // 模数
-  T r2;        // r^2 mod mod
-  T neg_r_inv; // -r^(-1) mod 2^32
+  T r2;        // R^2 mod mod (where R = 2^mont_word_bits)
+  T neg_r_inv; // -mod^(-1) mod R (where R = 2^mont_word_bits)
 };
