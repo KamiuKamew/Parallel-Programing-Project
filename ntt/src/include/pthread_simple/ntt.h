@@ -18,7 +18,7 @@
  * @param p 模数（质数）
  */
 template <typename T>
-inline void poly_multiply_ntt(T *a, T *b, T *ab, T n, T p, T OMEGA = 3)
+inline void poly_multiply_ntt_pthread_simple(T *a, T *b, T *ab, T n, T p, T OMEGA = 3)
 {
   // num_threads is now implicitly handled by the global thread pool size.
   // No longer need to pass num_threads to ntt_forward/inverse_mont_pthread.
@@ -200,7 +200,7 @@ struct NttPthreadTaskArgs
 template <typename T>
 void execute_ntt_j_block_computation(NttPthreadTaskArgs<T> args)
 {
-  T w_mont_iter = args.mont_mod_obj_ptr->from_u32(1);
+  T w_mont_iter = args.mont_mod_obj_ptr->from_T(1);
   // The k-loop processes elements for the given j_block_idx
   for (T k = 0; k < args.current_mid_val; ++k)
   {
@@ -306,7 +306,7 @@ void ntt_inverse_mont_pthread(T *a_mont_arr, T n_len, T p_mod, T inv_omega_mont_
   // Final scaling for inverse NTT
   if (n_len > 0)
   { // Avoid division by zero or issues if n_len is 0
-    T n_len_mont = montMod.from_u32(n_len);
+    T n_len_mont = montMod.from_T(n_len);
     T n_inv_mont = montMod.inv(n_len_mont);
     for (T i = 0; i < n_len; ++i)
     {

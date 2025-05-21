@@ -2,6 +2,7 @@
 #include "src/include/simd/ntt.h"
 #include "src/include/CRT/ntt.h"
 #include "src/include/pthread_crt/ntt.h"
+#include "src/include/pthread_simple/ntt.h"
 
 #include <chrono>
 #include <cstring>
@@ -115,10 +116,11 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    // poly_multiply_ntt(a, b, ab, n_, p_);
+    poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
-    poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
+    // poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
+    // poly_multiply_ntt_pthread_simple(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;
