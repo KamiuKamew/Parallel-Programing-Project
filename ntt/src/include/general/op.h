@@ -44,7 +44,7 @@ class MontMod
 {
   using T_mont = T;
   using T2 = t_widen<T>;
-  static constexpr int mont_word_bits = sizeof(T) * 8;
+  static constexpr int word_bits = sizeof(T) * 8;
 
 public:
   MontMod(T _mod) : mod(_mod)
@@ -52,7 +52,7 @@ public:
     // 计算 R^2 mod mod，这里 R = 2^mont_word_bits
     // First, calculate R_mod_n = 2^mont_word_bits mod mod
     T2 r_val_mod_n = 1;
-    for (int i = 0; i < mont_word_bits; ++i)
+    for (int i = 0; i < word_bits; ++i)
       r_val_mod_n = (r_val_mod_n << 1) % mod;
     // Now r_val_mod_n = 2^mont_word_bits mod mod
     // Then r2 = (2^mont_word_bits mod mod)^2 mod mod = (2^mont_word_bits)^2 mod mod
@@ -63,25 +63,26 @@ public:
     T inv = 1;
     // 牛顿迭代法求模逆 mod R
     int inv_iterations;
-    if constexpr (mont_word_bits <= 2)
+    if (word_bits <= 2)
       inv_iterations = 1;
-    else if constexpr (mont_word_bits <= 4)
+    else if (word_bits <= 4)
       inv_iterations = 2;
-    else if constexpr (mont_word_bits <= 8)
+    else if (word_bits <= 8)
       inv_iterations = 3;
-    else if constexpr (mont_word_bits <= 16)
+    else if (word_bits <= 16)
       inv_iterations = 4;
-    else if constexpr (mont_word_bits <= 32)
+    else if (word_bits <= 32)
       inv_iterations = 5;
-    else if constexpr (mont_word_bits <= 64)
+    else if (word_bits <= 64)
       inv_iterations = 6;
-    // else if constexpr (mont_word_bits <= 128) inv_iterations = 7; // For T=u128 if supported directly
+    else if (word_bits <= 128)
+      inv_iterations = 7;
     else
-      inv_iterations = 5; // Fallback, though should ideally cover all expected T sizes or error.
+      inv_iterations = 5;
 
     for (int i = 0; i < inv_iterations; ++i)
-      inv = (T)((T2)inv * (2 - (T2)mod * inv)); // Result is inv mod 2^mont_word_bits
-    neg_r_inv = -inv;                           // This is (-inv) mod 2^mont_word_bits due to type T
+      inv = (T)((T2)inv * (2 - (T2)mod * inv));
+    neg_r_inv = -inv;
   }
 
   MontMod(const MontMod &) = delete;
@@ -98,7 +99,7 @@ public:
     // tmp = t + m*mod. tmp must be divisible by R.
     T2 tmp = t + (T2)m * mod;
     // res_intermediate = tmp / R. This result should be < 2*mod.
-    T_mont res = (T)(tmp >> mont_word_bits);
+    T_mont res = (T)(tmp >> word_bits);
     // Ensure result is in [0, mod-1]
     res = res - (mod & -(res >= mod)); // if (res >= mod) res -= mod;
     return res;
