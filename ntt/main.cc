@@ -108,6 +108,8 @@ int _main(int argc, char *argv[])
   T test_end = 4;
   for (T i = test_begin; i <= test_end; ++i)
   {
+    std::cout << "test " << i << std::endl;
+
     long double ans = 0;
     T n_, p_;
     fRead(a, b, &n_, &p_, i);
@@ -116,11 +118,11 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    poly_multiply_ntt(a, b, ab, n_, p_);
+    // poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
     // poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
-    // poly_multiply_ntt_pthread_simple(a, b, ab, n_, p_);
+    poly_multiply_ntt_pthread_simple(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;
@@ -137,6 +139,7 @@ int _main(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+  std::cout << "start" << std::endl;
   _main<u64>(argc, argv);
   return 0;
 }

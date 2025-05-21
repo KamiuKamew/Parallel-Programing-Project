@@ -393,3 +393,4 @@ cd "/home/s2312237/ntt/src/test/output"
 ./"test-case-1"
 bash run.sh
 git commit --amend
+bash run.sh
