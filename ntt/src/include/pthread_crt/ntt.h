@@ -7,10 +7,31 @@
 #include "../general/utils.h"
 #include "../general/op.h"
 #include "../ntt.h"
+#include <pthread.h>
 
 static const u64 CRT_MODS[] = {998244353, 1004535809, 469762049, 167772161};
 static const u64 CRT_ROOTS[] = {3, 3, 3, 3};
 static const u64 CRT_NUMS = sizeof(CRT_MODS) / sizeof(CRT_MODS[0]);
+
+// Structure to pass arguments to each NTT worker thread
+struct PthreadNttArgs
+{
+    u64 *a_poly;          // Pointer to the first input polynomial
+    u64 *b_poly;          // Pointer to the second input polynomial
+    u64 *result_poly_crt; // Pointer to the output array for this thread (a part of ab_crt)
+    u64 n_poly_len;       // Original length of the polynomials
+    u64 current_mod;      // The CRT modulus for this thread
+    u64 current_root;     // The primitive root for the current_mod
+};
+
+// Thread worker function: performs poly_multiply_ntt for a single CRT modulus
+static void *poly_multiply_ntt_thread_worker(void *arg)
+{
+    PthreadNttArgs *params = (PthreadNttArgs *)arg;
+    poly_multiply_ntt(params->a_poly, params->b_poly, params->result_poly_crt,
+                      params->n_poly_len, params->current_mod, params->current_root);
+    return NULL;
+}
 
 // 将 ab_crt 的 CRT 结果合并到 ab 中
 inline void CRT_combine(u128 *ab, u64 **ab_crt, u64 n)
@@ -77,10 +98,34 @@ inline void poly_multiply_ntt_crt(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
     u64 **ab_crt = new u64 *[CRT_NUMS];
     u128 *ab_u128 = new u128[n_expanded];
 
+    // Step 1: Allocate memory for each CRT result array (serially)
     for (u64 i = 0; i < CRT_NUMS; i++)
     {
         ab_crt[i] = new u64[n_expanded]{};
-        poly_multiply_ntt(a, b, ab_crt[i], n, CRT_MODS[i], CRT_ROOTS[i]);
+    }
+
+    pthread_t threads[CRT_NUMS];
+    PthreadNttArgs thread_args[CRT_NUMS];
+
+    // Step 2: Create and launch threads to perform NTT for each modulus in parallel
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        thread_args[i].a_poly = a;
+        thread_args[i].b_poly = b;
+        thread_args[i].result_poly_crt = ab_crt[i];
+        thread_args[i].n_poly_len = n;
+        thread_args[i].current_mod = CRT_MODS[i];
+        thread_args[i].current_root = CRT_ROOTS[i];
+
+        // Note: Error checking for pthread_create is omitted for brevity here,
+        // but should be included in production-quality code.
+        pthread_create(&threads[i], NULL, poly_multiply_ntt_thread_worker, (void *)&thread_args[i]);
+    }
+
+    // Step 3: Wait for all threads to complete their execution
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        pthread_join(threads[i], NULL);
     }
 
     for (u64 i = 0; i < n_expanded; ++i)
