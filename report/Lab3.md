@@ -11,6 +11,7 @@
     - [对优化位点的理论分析](#对优化位点的理论分析)
     - [进行基于 OpenMP 的多线程并行化](#进行基于-openmp-的多线程并行化)
     - [初步的性能测试与分析](#初步的性能测试与分析)
+  - [基于 pthread 的朴素算法多线程优化](#基于-pthread-的朴素算法多线程优化)
   - [CRT 优化算法的实现](#crt-优化算法的实现)
     - [1. 基本原理](#1-基本原理)
     - [2. 代码实现](#2-代码实现)
@@ -78,7 +79,7 @@ for (u32 mid = 1; mid < n; mid <<= 1)
    - 如果**简单地**在 `k` 循环前（即 L2 循环内部）应用并行化指令，会遇到 `w_mont` 的**依赖问题**。同时，在每个 `j` 的迭代中都创建和销毁线程组将导致巨大的并行开销。**不过**理论上，可以通过修改 `w_mont` 的计算方式来**解除此依赖**，例如在每个 `k` 迭代中独立计算 `w_mont_for_k = montMod.pow(Wn_mont, k)`（考虑到初始 `w_mont` 的值）。若**如此修改**，`k` 循环的迭代**便可独立执行**。
    - 即便在解决了 `w_mont` 的依赖后并行化 `k` 循环，每个并行任务也仅执行一次蝶形运算。这属于**非常细的任务粒度**。这会导致任务过度划分，降低整体性能。
 
-综上，针对《2024 并行程序设计 Lab3_1_Pthread 编程-1.pdf》中提到的"显然可以对**第三层循环**进行多线程优化"，虽然理论上第三层循环（L3）在处理好 `w_mont` 的迭代依赖（例如通过为每个 `k` 重新计算 `(W_n)^k`）后可以并行，但这种做法存在任务粒度过细、并行开销高、实现难度大的问题。相比之下，并行化第二层循环（L2, 即 `j` 循环）任务粒度合适、并行管理开销较低、实现简洁。
+综上，针对《2024 并行程序设计 Lab3_1_Pthread 编程-1.pdf》中提到的"显然可以对**第三层循环**进行多线程优化"，虽然理论上第三层循环在处理好 `w_mont` 的迭代依赖（例如通过为每个 `k` 重新计算 `(W_n)^k`）后可以并行，但这种做法存在任务粒度过细、并行开销高、实现难度大的问题。相比之下，并行化第二层循环（即 `j` 循环）任务粒度合适、并行管理开销较低、实现简洁。
 
 因此，综合考虑数据依赖性、任务粒度、并行开销和实现复杂度，我们选择对**第二层** `for` 循环（`j` 循环）进行并行化。
 
@@ -116,6 +117,14 @@ for (u32 mid = 1; mid < n; mid <<= 1)
 我们将在报告的后续"分析与讨论"章节中，进一步设计测试方法，得到更全面的性能数据，从而进行更深入和系统的分析。
 
 <!-- FIXME：根据后文实际撰写内容修改这段话内容 -->
+
+## 基于 pthread 的朴素算法多线程优化
+
+这一部分中，我将使用 pthread 在基准算法上进行多线程优化。
+
+我们的优化在上一节（[基于 OpenMP 的朴素算法多线程优化](#基于-openmp-的朴素算法多线程优化)）的基础上进行。经过分析，我们选择了中间 `j` 循环作为优化位点。然而，由于该层循环并非最外层循环，如果我们在中间 `j` 循环外（即外层 `mid` 循环内）创建线程，则会导致线程被反复创建与删除，大大降低加速效果。因此，在这一节中，我们将抛弃 OpenMP，使用 pthread 维护一个线程池，动态地向中间 `j` 循环分配线程。
+
+<!-- TODO -->
 
 ## CRT 优化算法的实现
 
@@ -288,7 +297,7 @@ average latency for n = 131072 p = 469762049 : 900.773 (us)
 多项式乘法结果正确
 average latency for n = 131072 p = 1337006139375617 : 910.255 (us)
 
-我们可以在这里简单提一下，并在分析与讨论中的“2. ”或者“6. ”下进行讨论。
+我们可以在这里简单提一下，并在分析与讨论中的"2. "或者"6. "下进行讨论。
  -->
 
 ## 基于 pthread 的 CRT 优化算法多线程优化
@@ -297,9 +306,113 @@ average latency for n = 131072 p = 1337006139375617 : 910.255 (us)
 
 由于我们的模数数量固定为 4 个，我们可以简单地把四次多项式乘法分配给四个线程。此时线程划分次数少，每个线程的任务量几乎一致，且创建线程次数少，因此没必要使用线程池，直接为四个多项式乘法分配四个线程即可。
 
-具体来说，我们使用了下面的实现：
+我们主要修改了 `poly_multiply_ntt_crt` 函数（在 pthread 实现中更名为 `poly_multiply_ntt_pthread_crt`），并引入了辅助的数据结构和线程工作函数。其核心思路是将针对 `CRT_NUMS`（固定为 4）个不同模数的 `poly_multiply_ntt` 调用分配给不同的线程并行执行。
 
-<!-- TODO -->
+我们定义了一个结构体 `PthreadNttArgs`，用于封装传递给每个线程的独立参数。
+
+```cpp
+// Structure to pass arguments to each NTT worker thread
+struct PthreadNttArgs
+{
+    u64 *a_poly;          // Pointer to the first input polynomial
+    u64 *b_poly;          // Pointer to the second input polynomial
+    u64 *result_poly_crt; // Pointer to the output array for this thread (a part of ab_crt)
+    u64 n_poly_len;       // Original length of the polynomials
+    u64 current_mod;      // The CRT modulus for this thread
+    u64 current_root;     // The primitive root for the current_mod
+};
+```
+
+每个被创建的线程将执行 `poly_multiply_ntt_thread_worker` 函数。此函数从传入的参数中解析出所需数据，并调用标准的 `poly_multiply_ntt` 函数完成特定模数下的多项式乘法。
+
+```cpp
+// Thread worker function: performs poly_multiply_ntt for a single CRT modulus
+static void *poly_multiply_ntt_thread_worker(void *arg)
+{
+    PthreadNttArgs *params = (PthreadNttArgs *)arg;
+    poly_multiply_ntt(params->a_poly, params->b_poly, params->result_poly_crt,
+                        params->n_poly_len, params->current_mod, params->current_root);
+    return NULL;
+}
+```
+
+在主函数 `poly_multiply_ntt_pthread_crt` 中，我们首先为每个模数的结果数组分配内存。然后，创建 `CRT_NUMS` 个线程，每个线程配置其独立的 `PthreadNttArgs`。通过 `pthread_create` 启动这些线程后，主线程通过 `pthread_join` 等待所有子线程完成计算。
+
+```cpp
+inline void poly_multiply_ntt_pthread_crt(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
+{
+    u64 n_expanded = expand_n(2 * n - 1);
+
+    u64 **ab_crt = new u64 *[CRT_NUMS];
+    u128 *ab_u128 = new u128[n_expanded];
+
+    // Step 1: Allocate memory for each CRT result array (serially)
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        ab_crt[i] = new u64[n_expanded]{};
+    }
+
+    pthread_t threads[CRT_NUMS];
+    PthreadNttArgs thread_args[CRT_NUMS];
+
+    // Step 2: Create and launch threads to perform NTT for each modulus in parallel
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        thread_args[i].a_poly = a;
+        thread_args[i].b_poly = b;
+        thread_args[i].result_poly_crt = ab_crt[i];
+        thread_args[i].n_poly_len = n;
+        thread_args[i].current_mod = CRT_MODS[i];
+        thread_args[i].current_root = CRT_ROOTS[i];
+
+        pthread_create(&threads[i], NULL, poly_multiply_ntt_thread_worker, (void *)&thread_args[i]);
+    }
+
+    // Step 3: Wait for all threads to complete their execution
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Initialize ab_u128 with results from the first modulus
+    for (u64 i = 0; i < n_expanded; ++i)
+        ab_u128[i] = ab_crt[0][i];
+
+    // Combine results using CRT
+    CRT_combine(ab_u128, ab_crt, n_expanded);
+
+    // Final modular reduction
+    for (u64 i = 0; i < n_expanded; ++i)
+        ab[i] = ab_u128[i] % p;
+
+    // Memory cleanup
+    delete[] ab_u128;
+    for (u64 i = 0; i < CRT_NUMS; ++i)
+        delete[] ab_crt[i];
+    delete[] ab_crt;
+}
+```
+
+我们在`./test.sh 2 1 1`和`./test.sh 2 4 4`下分别 pthread 优化后的 CRT 进行初步的正确性测试和性能测试。初步结果显示，优化后的代码可以正确解决这 5 个测试样例，证明算法在 pthread 优化后也可以正常工作；二者对规模为`n = 131072`的样例的处理时长均从未优化时的$440 \mu s$变为$140 \mu s$左右，一方面证明 pthread 优化确实有效，另一方面似乎表明`test.sh`里设置的核心数和线程数似乎与程序实际使用的线程数无关。
+
+<!--
+测试结果：
+
+在./test.sh 2 1 1（2表示测试pthread，1表示申请1个核心，1表示申请1个线程）下，结果如下：
+
+多项式乘法结果正确
+average latency for n = 4 p = 7340033 : 0.327471 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 7340033 : 140.988 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 104857601 : 141.119 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 469762049 : 141.79 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 1337006139375617 : 145.227 (us)
+
+然而，在./test.sh 2 4 4下仍然差不多是以上结果。
+ -->
 
 ## 分析与讨论
 
