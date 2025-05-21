@@ -12,6 +12,8 @@
     - [进行基于 OpenMP 的多线程并行化](#进行基于-openmp-的多线程并行化)
     - [初步的性能测试与分析](#初步的性能测试与分析)
   - [CRT 优化算法的实现](#crt-优化算法的实现)
+    - [1. 基本原理](#1-基本原理)
+    - [2. 代码实现](#2-代码实现)
   - [基于 pthread 的 CRT 优化算法多线程优化](#基于-pthread-的-crt-优化算法多线程优化)
   - [分析与讨论](#分析与讨论)
 
@@ -21,7 +23,7 @@
 
 在此之前，我已经在上一次实验中实现了朴素的 NTT 算法以及使用 Montgomery 规约优化的 NTT 算法。本次实验我将选择使用 Montgomery 规约优化的 NTT 算法作为基准算法。
 
-实验中，我将首先使用 OpenMP 在基准算法上进行多线程优化；随后，我将使用 CRT（中国剩余定理）对基准算法进行优化，并在优化后的算法的基础上使用 pthread 进行多线程优化。最后，我将测试不同**问题规模**、不同**线程数**下的算法性能（串行和并行对比）；讨论一些基本的**算法/编程策略**对性能的影响，以及 **Pthread 程序和 OpenMP 程序**的**性能差异**；讨论多线程并行化的**不同算法策略**（如矩阵水平划分、垂直划分等不同任务划分方法，不同算法策略下的一致性保证等、线程管理代价优化等）及其**复杂性分析**；**profiling** 及**体系结构相关优化**（如 cache 优化）；不同**平台**（x86 或 ARM）上并行化实验；**OpenMP 卸载到加速器设备**；与 oneAPI 编程、C++语言标准中的多线程编程进行**性能对比**等。
+实验中，我将首先使用 OpenMP 和 pthread 在基准算法上进行多线程优化；随后，我将使用 CRT（中国剩余定理）对基准算法进行优化，并在优化后的算法的基础上使用 pthread 进行多线程优化。最后，我将测试不同**问题规模**、不同**线程数**下的算法性能（串行和并行对比）；讨论一些基本的**算法/编程策略**对性能的影响，以及 **Pthread 程序和 OpenMP 程序**的**性能差异**；讨论多线程并行化的**不同算法策略**（如矩阵水平划分、垂直划分等不同任务划分方法，不同算法策略下的一致性保证等、线程管理代价优化等）及其**复杂性分析**；**profiling** 及**体系结构相关优化**（如 cache 优化）；不同**平台**（x86 或 ARM）上并行化实验；**OpenMP 卸载到加速器设备**；与 oneAPI 编程、C++语言标准中的多线程编程进行**性能对比**等。
 
 <!-- FIXME：这里提到的不全是要做的。最后根据做了什么修改一下即可 -->
 
@@ -118,6 +120,172 @@ for (u32 mid = 1; mid < n; mid <<= 1)
 ## CRT 优化算法的实现
 
 这一部分中，我将使用 CRT（中国剩余定理）对基准算法进行优化。
+
+### 1. 基本原理
+
+在使用 NTT 进行多项式乘法时，若乘积多项式的系数可能非常大，以至于超过单个 NTT 模数 `p` 所能表示的范围（或者为了提高 NTT 的效率，选用的 `p` 较小），直接使用单一模数进行计算将导致结果错误。中国剩余定理（CRT）为此提供了一种解决方案，其核心思想是将一个大数上的计算分解为在多个较小的、互质的模数上进行计算，然后将这些结果合并以获得原始大数域上的解。在多项式乘法的背景下，这意味着：
+
+1. 选择一组素数 `m_0, m_1, ..., m_{k-1}`，这些素数都适合进行 NTT（即 `m_i - 1` 具有足够大的 2 的幂次因子），并且它们的乘积 `M = m_0 * m_1 * ... * m_{k-1}` 必须大于多项式乘积结果的任何可能系数的最大值。
+2. 对于每个模数 `m_i`，独立地计算多项式乘积 `C_i(x) = A(x) * B(x) (mod m_i)`。这通常通过对输入多项式 `A(x)` 和 `B(x)` 的系数分别取模 `m_i`，然后执行标准的 NTT 乘法完成。
+3. 对于结果多项式的每一个系数，我们得到一组同余方程：
+   `c_j ≡ c_{j,0} (mod m_0)`
+   `c_j ≡ c_{j,1} (mod m_1)`
+   `...`
+   `c_j ≡ c_{j,k-1} (mod m_{k-1})`
+   其中 `c_j` 是最终结果多项式第 `j` 个系数，`c_{j,i}` 是在模 `m_i` 下计算得到的第 `j` 个系数。
+4. 使用 CRT 从 `c_{j,0}, c_{j,1}, ..., c_{j,k-1}` 解出 `c_j (mod M)`。
+
+### 2. 代码实现
+
+在项目 `ntt/src/include/CRT/ntt.h` 文件中，我们实现了基于 CRT 的 NTT 多项式乘法。
+
+首先，定义了一组预选的 NTT 友好素数 `CRT_MODS` 及其对应的原根 `CRT_ROOTS`：
+
+```cpp
+static const u64 CRT_MODS[] = {998244353, 1004535809, 469762049, 167772161};
+static const u64 CRT_ROOTS[] = {3, 3, 3, 3};
+static const u64 CRT_NUMS = sizeof(CRT_MODS) / sizeof(CRT_MODS[0]);
+```
+
+这些模数都小于 `2^30`，适合 `u64` 计算，并且它们的乘积远大于常见的 `u64` 范围，可以表示非常大的系数。
+
+核心函数 `poly_multiply_ntt_crt` 负责整个流程：
+
+```cpp
+inline void poly_multiply_ntt_crt(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
+{
+    u64 n_expanded = expand_n(2 * n - 1); // 确定NTT运算的长度
+
+    u64 **ab_crt = new u64 *[CRT_NUMS];    // 存储每个模数下的NTT结果
+    u128 *ab_u128 = new u128[n_expanded]; // 存储CRT合并后的结果 (使用u128防止溢出)
+
+    // 1. 对每个CRT模数执行标准NTT多项式乘法
+    for (u64 i = 0; i < CRT_NUMS; i++)
+    {
+        ab_crt[i] = new u64[n_expanded]{};
+        // poly_multiply_ntt 对 a 和 b 的系数模 CRT_MODS[i] 后进行NTT乘法
+        poly_multiply_ntt(a, b, ab_crt[i], n, CRT_MODS[i], CRT_ROOTS[i]);
+    }
+
+    // 初始化合并结果，以第一个模数下的结果为基础
+    for (u64 i = 0; i < n_expanded; ++i)
+        ab_u128[i] = ab_crt[0][i];
+
+    // 2. 使用CRT合并结果
+    CRT_combine(ab_u128, ab_crt, n_expanded);
+    // 或者 CRT_combine_2(ab_u128, ab_crt, n_expanded);
+
+    // 3. 将合并后的大数结果对最终模数 p 取模
+    for (u64 i = 0; i < n_expanded; ++i)
+        ab[i] = ab_u128[i] % p;
+
+    // 内存回收
+    delete[] ab_u128;
+    for (u64 i = 0; i < CRT_NUMS; ++i)
+        delete[] ab_crt[i];
+    delete[] ab_crt;
+}
+```
+
+该函数首先对选定的每个 `CRT_MODS[i]` 执行一次标准的多项式乘法 `poly_multiply_ntt`，并将结果存储在 `ab_crt[i]` 中。随后，调用 `CRT_combine` (或 `CRT_combine_2`) 函数，依据中国剩余定理，将这些部分结果合并到 `ab_u128` 数组中（使用 `u128` 类型以容纳可能的大数值）。最后，将合并后的结果对目标模数 `p` 取模，得到最终的多项式系数。
+
+代码中实现了两种 CRT 合并算法：`CRT_combine` 和 `CRT_combine_2`。
+`CRT_combine` 的实现方式如下（一种迭代式的 Garner\'s algorithm 的变体）：
+
+```cpp
+// 将 ab_crt 的 CRT 结果合并到 ab 中 (ab 初始化为 ab_crt[0])
+inline void CRT_combine(u128 *ab, u64 **ab_crt, u64 n)
+{
+    u128 m = CRT_MODS[0]; // 当前已经合并的模数的乘积
+    for (u64 i = 1; i < CRT_NUMS; ++i) // 从第二个模数开始迭代
+    {
+        u64 CRT_MOD = CRT_MODS[i]; // 当前要合并的模数
+        Mod128 mod(CRT_MOD);       // 用于在 CRT_MOD 下进行运算的模运算类
+
+        // 计算 m 在模 CRT_MOD 下的逆元：inv(m) mod CRT_MOD
+        u128 inv = mod.inv(m % CRT_MOD);
+        for (u64 j = 0; j < n; j++) // 对每个系数进行合并
+        {
+            u128 x = ab[j]; // 当前已经合并的结果 x = k_0 (mod m_0*...*m_{i-1})
+            // t = (ab_crt[i][j] - (x % CRT_MOD)) * inv(m) (mod CRT_MOD)
+            // t 是满足 (x + m*t) === ab_crt[i][j] (mod CRT_MOD) 的最小非负整数
+            u64 t = mod.sub(ab_crt[i][j], x % CRT_MOD);
+            t = mod.mul(t, inv);
+
+            // 更新合并结果：x_new = x + m * t
+            // 此时 x_new 满足 x_new === k_0 (mod m_0*...*m_{i-1})
+            // 且 x_new === ab_crt[i][j] (mod CRT_MOD)
+            x = x + m * t;
+            ab[j] = x;
+        }
+        m *= CRT_MOD; // 更新已合并模数的乘积
+    }
+}
+```
+
+此方法逐个引入新的模数，并更新当前已合并的解。对于每个系数 `ab[j]`，它首先保存了模 `m_0 * ... * m_{i-1}` 的解，然后通过计算一个调整项 `t`，使得新的解也满足模 `m_i` 的同余条件。
+
+`CRT_combine_2` 实现了另一种合并方式，它对每个系数独立地从头开始构建 CRT 解：
+
+```cpp
+inline void CRT_combine_2(u128 *ab, u64 **ab_crt, u64 n)
+{
+    for (u64 i = 0; i < n; ++i) // 对每个系数独立计算
+    {
+        u128 x = ab_crt[0][i]; // 从第一个模数的结果开始
+        u128 m = CRT_MODS[0];
+
+        for (u64 j = 1; j < CRT_NUMS; ++j) // 逐个引入其他模数的结果
+        {
+            u64 CRT_MOD = CRT_MODS[j];
+            Mod128 mod(CRT_MOD);
+
+            // t = (ab_crt[j][i] - (x % CRT_MOD)) * inv(m % CRT_MOD) (mod CRT_MOD)
+            u64 t = mod.sub(ab_crt[j][i], x % CRT_MOD);
+            u64 inv = mod.inv(m % CRT_MOD);
+            t = mod.mul(t, inv);
+
+            x = x + m * t; // 更新解
+            m *= CRT_MOD;  // 更新模数乘积
+        }
+        ab[i] = x; // 存储当前系数的最终CRT解
+    }
+}
+```
+
+我们分别对两个 CRT 算法在第 0 到第 4 个测试样例上进行初步的正确性测试和性能测试。初步结果显示，两个算法均可以正确解决这 5 个测试样例，证明算法在`uint64`的数据宽度下也可以正常工作； `CRT_combine` 在处理 `n = 131072` 规模的问题时，耗时约 **440-450** 微秒，而 `CRT_combine_2` 耗时约 **900-910** 微秒。这表明迭代更新当前解的 `CRT_combine` 方法可能具有**更好的缓存局部性**或**更少的重复计算**（例如模逆元的计算 `mod.inv(m % CRT_MOD)` 中，`m` 在 `CRT_combine` 的外层循环中，而 `CRT_combine_2` 中 `m` 在内层循环变化，但 `mod.inv` 每次都针对新的 `m % CRT_MOD` 进行计算）。我们将在[分析与讨论](#分析与讨论)一节中对该现象的成因进行分析。
+
+引入这一 CRT 优化算法后，我们可以处理更大系数的多项式乘法。我们将在接下来的[基于 pthread 的 CRT 优化算法多线程优化](#基于-pthread-的-crt-优化算法多线程优化)一节中对这一算法进行并行化。
+
+<!--
+注：使用第一个CRT算法的结果如下：
+
+多项式乘法结果正确
+average latency for n = 4 p = 7340033 : 0.03446 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 7340033 : 446.686 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 104857601 : 442.015 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 469762049 : 441.801 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 1337006139375617 : 448.786 (us)
+
+使用第二个CRT算法的结果如下：
+
+多项式乘法结果正确
+average latency for n = 4 p = 7340033 : 0.04449 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 7340033 : 905.087 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 104857601 : 905.88 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 469762049 : 900.773 (us)
+多项式乘法结果正确
+average latency for n = 131072 p = 1337006139375617 : 910.255 (us)
+
+我们可以在这里简单提一下，并在分析与讨论中的“2. ”或者“6. ”下进行讨论。
+ -->
 
 ## 基于 pthread 的 CRT 优化算法多线程优化
 
