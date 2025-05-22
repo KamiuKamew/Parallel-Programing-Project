@@ -12,13 +12,16 @@
 #include <sys/time.h>
 // #include <omp.h>
 
+std::string path_read = "/nttdata/";
+std::string path_check = "/nttdata/";
+std::string path_write = "files/";
+
 template <typename T>
 void fRead(T *a, T *b, T *n, T *p, T input_id)
 {
   // 数据输入函数
-  std::string str1 = "/nttdata/";
   std::string str2 = std::to_string(input_id);
-  std::string strin = str1 + str2 + ".in";
+  std::string strin = path_read + str2 + ".in";
   char data_path[strin.size() + 1];
   std::copy(strin.begin(), strin.end(), data_path);
   data_path[strin.size()] = '\0';
@@ -39,9 +42,8 @@ template <typename T>
 void fCheck(T *ab, T n, T input_id)
 {
   // 判断多项式乘法结果是否正确
-  std::string str1 = "/nttdata/";
   std::string str2 = std::to_string(input_id);
-  std::string strout = str1 + str2 + ".out";
+  std::string strout = path_check + str2 + ".out";
   char data_path[strout.size() + 1];
   std::copy(strout.begin(), strout.end(), data_path);
   data_path[strout.size()] = '\0';
@@ -65,9 +67,8 @@ template <typename T>
 void fWrite(T *ab, T n, T input_id)
 {
   // 数据输出函数, 可以用来输出最终结果, 也可用于调试时输出中间数组
-  std::string str1 = "files/";
   std::string str2 = std::to_string(input_id);
-  std::string strout = str1 + str2 + ".out";
+  std::string strout = path_write + str2 + ".out";
   char output_path[strout.size() + 1];
   std::copy(strout.begin(), strout.end(), output_path);
   output_path[strout.size()] = '\0';
@@ -115,10 +116,10 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    // poly_multiply_ntt(a, b, ab, n_, p_);
+    poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
-    poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
+    // poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
 
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;

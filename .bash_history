@@ -393,3 +393,29 @@ cd "/home/s2312237/ntt/src/test/output"
 ./"test-case-1"
 bash run.sh
 git commit --amend
+qstat -n
+git checkout master
+qdel all
+qstat -n
+qdel all
+qstat -n
+bash run.sh
+git branch -d debu1
+git checkout master
+bash run.sh
+qstat -n
+qdel all
+qstat -n
+bash run.sh
+git branch main
+git branch -d main
+git checkout master
+git branch -M master_new main
+git branch -d master
+git branch -M master_new master
+git branch -M main master
+git branch -M debug old-buggy-master
+git branch -d debu1
+git branch -M master master-new
+bash run.sh
+bash run.sh
