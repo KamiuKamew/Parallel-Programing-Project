@@ -21,29 +21,57 @@ template <typename T>
 inline void ntt_forward_mont_pthread_simple(T *a_mont, T n, T p, T omega_mont)
 {
     using T_mont = T;
-
     MontMod<T> montMod(p);
-    size_t num_threads_for_pool = std::thread::hardware_concurrency();
-    if (num_threads_for_pool == 0)
-        num_threads_for_pool = 1; // Ensure at least one thread
-    ThreadPool pool(num_threads_for_pool);
+    size_t num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0)
+        num_threads = 1;
+
+    ThreadPool pool(num_threads);
 
     for (T mid = 1; mid < n; mid <<= 1)
     {
         T_mont Wn_mont = montMod.pow(omega_mont, (p - 1) / (mid << 1));
-        for (T j = 0; j < n; j += (mid << 1))
+        // for (T j = 0; j < n; j += (mid << 1))
+        // {
+        //     auto k_loop = [=, &montMod]()
+        //     {
+        //         T_mont w_loc_mont = montMod.from_T(1);
+        //         for (T k = 0; k < mid; ++k, w_loc_mont = montMod.mul(w_loc_mont, Wn_mont))
+        //         {
+        //             T_mont x_mont_val = a_mont[j + k];
+        //             T_mont y_mont_val = montMod.mul(w_loc_mont, a_mont[j + k + mid]);
+        //             a_mont[j + k] = montMod.add(x_mont_val, y_mont_val);
+        //             a_mont[j + k + mid] = montMod.sub(x_mont_val, y_mont_val);
+        //         }
+        //     };
+        //     if (mid == 1)
+        //         k_loop();
+        //     else
+        //         pool.enqueue(k_loop);
+        // }
+        T total_blocks = n / (mid << 1);
+
+        for (size_t t = 0; t < num_threads; ++t)
         {
+            T start_block = total_blocks * t / num_threads;
+            T end_block = total_blocks * (t + 1) / num_threads;
+
             pool.enqueue([=, &montMod]()
                          {
-                T_mont w_loc_mont = montMod.from_T(1);
-                for (T k = 0; k < mid; ++k, w_loc_mont = montMod.mul(w_loc_mont, Wn_mont))
+                for (T b = start_block; b < end_block; ++b)
                 {
-                    T_mont x_mont_val = a_mont[j + k];
-                    T_mont y_mont_val = montMod.mul(w_loc_mont, a_mont[j + k + mid]);
-                    a_mont[j + k] = montMod.add(x_mont_val, y_mont_val);
-                    a_mont[j + k + mid] = montMod.sub(x_mont_val, y_mont_val);
+                    T j = b * (mid << 1);
+                    T_mont w_mont = montMod.from_T(1);
+                    for (T k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
+                    {
+                        T_mont x = a_mont[j + k];
+                        T_mont y = montMod.mul(w_mont, a_mont[j + k + mid]);
+                        a_mont[j + k] = montMod.add(x, y);
+                        a_mont[j + k + mid] = montMod.sub(x, y);
+                    }
                 } });
         }
+
         pool.wait();
     }
 }
@@ -62,29 +90,57 @@ template <typename T>
 inline void ntt_inverse_mont_pthread_simple(T *a_mont, T n, T p, T inv_omega_val_mont)
 {
     using T_mont = T;
-
     MontMod<T> montMod(p);
-    size_t num_threads_for_pool = std::thread::hardware_concurrency();
-    if (num_threads_for_pool == 0)
-        num_threads_for_pool = 1; // Ensure at least one thread
-    ThreadPool pool(num_threads_for_pool);
+    size_t num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0)
+        num_threads = 1;
+
+    ThreadPool pool(num_threads);
 
     for (T mid = n >> 1; mid > 0; mid >>= 1)
     {
         T_mont Wn_mont = montMod.pow(inv_omega_val_mont, (p - 1) / (mid << 1));
-        for (T j = 0; j < n; j += (mid << 1))
+        // for (T j = 0; j < n; j += (mid << 1))
+        // {
+        //     auto k_loop = [=, &montMod]()
+        //     {
+        //         T_mont w_loc_mont = montMod.from_T(1);
+        //         for (T k = 0; k < mid; ++k, w_loc_mont = montMod.mul(w_loc_mont, Wn_mont))
+        //         {
+        //             T_mont x_mont_val = a_mont[j + k];
+        //             T_mont y_mont_val = a_mont[j + k + mid];
+        //             a_mont[j + k] = montMod.add(x_mont_val, y_mont_val);
+        //             a_mont[j + k + mid] = montMod.mul(w_loc_mont, montMod.sub(x_mont_val, y_mont_val));
+        //         }
+        //     };
+        //     if (mid == 1)
+        //         k_loop();
+        //     else
+        //         pool.enqueue(k_loop);
+        // }
+        T total_blocks = n / (mid << 1);
+
+        for (size_t t = 0; t < num_threads; ++t)
         {
+            T start_block = total_blocks * t / num_threads;
+            T end_block = total_blocks * (t + 1) / num_threads;
+
             pool.enqueue([=, &montMod]()
                          {
-                T_mont w_loc_mont = montMod.from_T(1);
-                for (T k = 0; k < mid; ++k, w_loc_mont = montMod.mul(w_loc_mont, Wn_mont))
+                for (T b = start_block; b < end_block; ++b)
                 {
-                    T_mont x_mont_val = a_mont[j + k];
-                    T_mont y_mont_val = a_mont[j + k + mid];
-                    a_mont[j + k] = montMod.add(x_mont_val, y_mont_val);
-                    a_mont[j + k + mid] = montMod.mul(w_loc_mont, montMod.sub(x_mont_val, y_mont_val));
+                    T j = b * (mid << 1);
+                    T_mont w_mont = montMod.from_T(1);
+                    for (T k = 0; k < mid; ++k, w_mont = montMod.mul(w_mont, Wn_mont))
+                    {
+                        T_mont x = a_mont[j + k];
+                        T_mont y = a_mont[j + k + mid];
+                        a_mont[j + k] = montMod.add(x, y);
+                        a_mont[j + k + mid] = montMod.mul(w_mont, montMod.sub(x, y));
+                    }
                 } });
         }
+
         pool.wait();
     }
 
