@@ -3,7 +3,7 @@
 #include "../general/op.h"
 
 template <typename T>
-inline void ntt_forward_mont_omp(T_mont *a_mont, T n, T p, T_mont omega_mont)
+inline void ntt_forward_mont_omp(T *a_mont, T n, T p, T omega_mont)
 {
     using T_mont = T;
 
@@ -28,7 +28,7 @@ inline void ntt_forward_mont_omp(T_mont *a_mont, T n, T p, T_mont omega_mont)
 }
 
 template <typename T>
-inline void ntt_inverse_mont_omp(T_mont *a_mont, T n, T p, T_mont omega_mont)
+inline void ntt_inverse_mont_omp(T *a_mont, T n, T p, T omega_mont)
 {
     using T_mont = T;
 

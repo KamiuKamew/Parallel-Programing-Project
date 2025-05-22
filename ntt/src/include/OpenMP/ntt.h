@@ -4,10 +4,8 @@
 #include "../general/op.h"
 #include "transform.h"
 
-#define OMEGA 3 // 998244353 的原根
-
 template <typename T>
-inline void poly_multiply_ntt_omp(T *a, T *b, T *ab, T n, T p)
+inline void poly_multiply_ntt_omp(T *a, T *b, T *ab, T n, T p, T OMEGA = 3)
 {
     using T_mont = T;
 

@@ -419,3 +419,7 @@ git branch -d debu1
 git branch -M master master-new
 bash run.sh
 bash run.sh
+qstat
+qdel all
+qstat
+bash run.sh
