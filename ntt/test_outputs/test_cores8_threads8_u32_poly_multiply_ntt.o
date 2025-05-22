@@ -1,0 +1,12 @@
+多项式乘法结果正确
+average latency for n = 4 p = 7340033 : 0.00526 (us) 
+多项式乘法结果正确
+average latency for n = 131072 p = 7340033 : 78.7409 (us) 
+多项式乘法结果正确
+average latency for n = 131072 p = 104857601 : 77.7394 (us) 
+多项式乘法结果正确
+average latency for n = 131072 p = 469762049 : 77.3173 (us) 
+多项式乘法结果错误
+average latency for n = 131072 p = 4294967295 : 78.4556 (us) 
+
+Authorized users only. All activities may be monitored and reported.
