@@ -1,5 +1,5 @@
 #include "src/include/ntt.h"
-#include "src/include/simd/ntt.h"
+// #include "src/include/simd/ntt.h"
 #include "src/include/CRT/ntt.h"
 #include "src/include/pthread_crt/ntt.h"
 #include "src/include/pthread_simple/ntt.h"
@@ -117,7 +117,7 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    poly_multiply_ntt(a, b, ab, n_, p_);
+    // poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
     // poly_multiply_ntt_pthread_crt(a, b, ab, n_, p_);
@@ -138,6 +138,10 @@ int _main(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+  path_read = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.nttdata/";
+  path_check = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.nttdata/";
+  path_write = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.file/";
+
   _main<u64>(argc, argv);
   return 0;
 }
