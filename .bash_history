@@ -423,3 +423,29 @@ qstat
 qdel all
 qstat
 bash run.sh
+. "\home\s2312237\.cursor-server\cli\servers\Stable-96e5b01ca25f8fbd4c4c10bc69b15f6228c80770\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+cd /home/s2312237/ntt && ./test.sh 2 1 1
+qstat
+qstat -n
+qdel all
+qstat -n
+qdel all
+bash run.sh
+cd ntt
+./test.sh 2 1 1
+./test.sh 2 2 2
+./test.sh 2 3 3
+./test.sh 2 4 4
+./test.sh 2 5 5
+./test.sh 2 6 6
+./test.sh 2 7 7
+./test.sh 2 8 8
+g++ main.cc -o main -O2 -fopenmp -lpthread -std=c++11
+./test.sh 2 8 8cdcdccddccc
+./test.sh 2 4 4
+bash run_all_tests.sh
+cd ..
+cd home
+cd s2312237
+bash run_all_tests.sh
+git checkout master-new

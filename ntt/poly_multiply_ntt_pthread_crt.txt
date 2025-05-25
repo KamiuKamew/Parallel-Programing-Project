@@ -1,0 +1,67 @@
+Test run started at Sun May 25 06:32:19 PM CST 2025
+
+Processing for test.sh 2 1 1
+  Average latencies for test.sh 2 1 1 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .36451 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 135.54420 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 133.88300 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 137.33200 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 144.16180 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 2 2
+  Average latencies for test.sh 2 2 2 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .56194 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 148.38460 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 150.65720 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 151.61860 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 154.16160 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 3 3
+  Average latencies for test.sh 2 3 3 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .52188 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 148.86620 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 163.64280 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 160.61420 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 163.11920 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 4 4
+  Average latencies for test.sh 2 4 4 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .39127 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 136.61380 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 147.13980 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 148.06560 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 151.01780 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 5 5
+  Average latencies for test.sh 2 5 5 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .37955 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 138.73840 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 151.63060 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 150.29820 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 155.42400 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 6 6
+  Average latencies for test.sh 2 6 6 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .38240 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 135.00960 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 139.75260 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 138.06280 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 141.98840 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 7 7
+  Average latencies for test.sh 2 7 7 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .40103 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 135.95360 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 134.13780 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 133.38600 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 136.36940 (us) (from 5 successful extractions)
+
+Processing for test.sh 2 8 8
+  Average latencies for test.sh 2 8 8 (over 5 repetitions):
+    Test Point 1 (n=4, p=7340033): .44538 (us) (from 5 successful extractions)
+    Test Point 2 (n=131072, p=7340033): 152.83320 (us) (from 5 successful extractions)
+    Test Point 3 (n=131072, p=104857601): 143.32420 (us) (from 5 successful extractions)
+    Test Point 4 (n=131072, p=469762049): 140.10540 (us) (from 5 successful extractions)
+    Test Point 5 (n=131072, p=1337006139375617): 146.20540 (us) (from 5 successful extractions)
+
+All tests finished. Results appended to test_results.txt
