@@ -118,7 +118,7 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
     \vspace{20mm}
 		\textbf{\huge\textbf{\kaishu{计算机学院}}}\\[0.5cm]
 		\textbf{\huge{\kaishu{并行程序设计实验报告}}}\\[2.3cm]
-		\textbf{\Huge\textbf{\kaishu{SIMD编程}}}
+		\textbf{\Huge\textbf{\kaishu{OpenMP 与 pthread 多线程编程}}}
 
 		\vspace{\fill}
     
@@ -140,6 +140,12 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
 \renewcommand{\contentsname}{目录}  
 \cfoot{\thepage\ of \pageref{LastPage}}%当前页 of 总页数
 
+\begin{abstract}
+    本文探讨了基于 NTT（数论变换）算法的多项式乘法的多线程优化实现。首先，我们分别使用 OpenMP 和 pthread 对基准 NTT 算法进行了多线程优化；随后，我们使用中国剩余定理（CRT）对基准算法进行了优化，并在此基础上使用 pthread 进行了多线程优化。在实验中，我们对不同问题规模、不同线程数下的算法性能进行了详细测试和分析。通过调试源码、查阅资料和使用 perf 工具进行 profiling，我们解释了线程数设置与实际性能无关的原因，并探讨了 Pthread 程序和 OpenMP 程序的性能差异。此外，我们还从算法策略和体系结构相关优化的角度，分析了 CRT 合并的两种实现之间接近一倍的性能差异的成因。实验结果表明，在大规模数据下，我们的多线程优化方案能够显著提升算法性能，其中，相比于NTT串行算法， OpenMP 优化和 Pthread 优化分别实现了约 61.0\% 和 30.1\% 的性能提升；相比于CRT多模数合并的串行算法，Pthread优化的CRT算法实现了约267.3\%的性能提升。
+    
+\noindent \textbf{关键词：} NTT；多项式乘法；OpenMP；pthread；中国剩余定理；多线程优化；性能分析
+\end{abstract}
+
 % 生成目录
 \clearpage
 \tableofcontents
@@ -155,9 +161,15 @@ rulesepcolor= \color{ red!20!green!20!blue!20}
 
 本次实验的主要优化对象是\texttt{ntt\_forward\_mont}和\texttt{ntt\_inverse\_mont}两个函数。由于\texttt{ntt\_forward\_mont}和\texttt{ntt\_inverse\_mont}均由结构相似的三层\texttt{for}循环构成，本文将以\texttt{ntt\_forward\_mont}为例进行分析，\texttt{ntt\_inverse\_mont}的部分同理可知，因此略去不做展示。
 
+\paragraph{实验环境} 本次实验均在校方服务器上进行，程序编译基于\texttt{g++ main.cc -o main -O2 -fopenmp -lpthread -std=c++11}指令进行，采用O2优化等级；程序运行基于\texttt{test.sh}进行。
+
+\paragraph{实验设计} 本实验将代码重构为64位版本，所有测试均基于校方服务器中的第0、1、2、3、4个测试样例进行。
+
+\paragraph{GitHub 项目链接} 与上一次一致，我们的代码在\url{https://github.com/KamiuKamew/Parallel-Programing-Project}中开源，其中本次实验实现的部分在\texttt{ntt/src/include/OpenMP}、\texttt{ntt/src/include/pthread\_simple}、\texttt{ntt/src/include/CRT}和\texttt{ntt/src/include/pthread\_crt}文件夹中。
+
 % TODO
 
-\section{基于 OpenMP 的朴素算法多线程优化}
+\section{基于 OpenMP 的朴素算法多线程优化}\label{sec:openmp}
 
 这一部分中，我将使用 OpenMP 在基准算法上进行多线程优化。
 
@@ -654,24 +666,27 @@ inline void poly_multiply_ntt_pthread_crt(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
 
 在这一部分，我们将统一测试并展示不同\textbf{问题规模}、不同\textbf{数据类型}和不同\textbf{线程数}下的算法运行延迟，随后计算各个优化算法的加速比。
 
-首先，我们在服务器上对串行 ntt、OpenMP 优化的 ntt、Pthread 优化的 ntt、串行 CRT 和 Pthread 优化的 CRT 分别在五个测试点下进行了五轮测试并取平均值。随后，我们分别在小规模数据（\texttt{n=4, p=7340033}）、大规模数据（\texttt{n=131072, p=7340033}）和大模数（\texttt{n=131072, p=1337006139375617}）三个情形下绘制了热力图，直观对比这五个算法的延迟。三个情形下的图片分别为：
+首先，我们在服务器上对串行 ntt、OpenMP 优化的 ntt、Pthread 优化的 ntt、串行 CRT 和 Pthread 优化的 CRT 分别在五个测试点下进行了五轮测试并取平均值。随后，我们分别在小规模数据（\texttt{n=4, p=7340033}）、大规模数据（\texttt{n=131072, p=7340033}）和大模数（\texttt{n=131072, p=1337006139375617}）三个情形下绘制了热力图，直观对比这五个算法的延迟。三个情形下的图片分别见图\ref{fig:1}, \ref{fig:2}, \ref{fig:3}。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.8\textwidth]{image/heatmap_table1.png}
-\caption{小规模数据下的性能对比}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{heatmap_table1.png}
+    \caption{小规模数据（\texttt{n=4, p=7340033}）下的性能对比热力图}
+    \label{fig:1}
 \end{figure}
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.8\textwidth]{image/heatmap_table2.png}
-\caption{大规模数据下的性能对比}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{heatmap_table2.png}
+    \caption{大规模数据（\texttt{n=131072, p=7340033}）下的性能对比热力图}
+    \label{fig:2}
 \end{figure}
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.8\textwidth]{image/heatmap_table3.png}
-\caption{大模数下的性能对比}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{heatmap_table3.png}
+    \caption{大模数（\texttt{n=131072, p=1337006139375617}）下的性能对比热力图}
+    \label{fig:3}
 \end{figure}
 
 根据图片，纵向来看（对比同一线程、不同算法），我们可以看出：
@@ -718,11 +733,11 @@ ThreadPool pool(num_threads);
 
 同理，我们怀疑 OpenMP 也是出于同样的原因才使得更改线程数对性能的影响较小。为了佐证我们的猜想，我们查找资料了解 OpenMP 的运行方式。我们发现，如果未通过 \texttt{OMP\_NUM\_THREADS} 环境变量或库函数（如 \texttt{omp\_set\_num\_threads()}）显式设置线程数，OpenMP 运行时库通常会默认使用其检测到的系统所有可用逻辑核心（例如通过 \texttt{omp\_get\_num\_procs()} 查询）。这种检测方式与 \texttt{std::thread::hardware\_concurrency()} 类似，也不考虑外部脚本施加的 CPU 资源限制，从而导致即使在不同 \texttt{test.sh} 配置下，程序实际使用的线程数是一致的。
 
-补充：我们在与同学交流的时候获知，\texttt{bash test.sh 2 4 4}里的"4 线程"指的是"\textbf{最低}分配 4 个线程"，而非"\textbf{固定}分配 4 个线程"。也就是说，如果计算集群此时有超过 4 个线程可用，\texttt{std::thread::hardware\_concurrency()}仍会尝试获取尽可能多的可用线程数。这解释了 num\_threads`始终固定为 8 的原因。
+补充：我们在与同学交流的时候获知，\texttt{bash test.sh 2 4 4}里的"4 线程"指的是"\textbf{最低}分配 4 个线程"，而非"\textbf{固定}分配 4 个线程"。也就是说，如果计算集群此时有超过 4 个线程可用，\texttt{hardware\_concurrency()}仍会尝试获取尽可能多的可用线程数。这解释了 num\_threads`始终固定为 8 的原因。
 
 \subsection{profiling}
 
-我们在这一节重点使用 perf 测试\texttt{poly\_multiply\_ntt\_pthread\_simple}和\texttt{poly\_multiply\_ntt\_omp}这两个函数的 CPI、Cache 命中率，以及总执行时间。随后，我们尝试了绘制这两个函数以及\texttt{poly\_multiply\_ntt\_pthread\_crt}的火焰图，但是经过探索，我们发现只能绘制出提交脚本的火焰图，无法得到我们程序的火焰图。因此，我们本次实验将跳过火焰图部分。
+我们在这一节重点使用 perf 测试\texttt{poly\_multiply\_ntt\_pthread\_simple}和\texttt{poly\_multiply\_ntt\_omp}这两个函数的 CPI、Cache 命中率，以及总执行时间。随后，我们尝试绘制火焰图，但是经过探索，我们发现只能绘制出提交脚本的火焰图，无法得到我们程序的火焰图。因此，我们本次实验将跳过火焰图部分。
 
 \subsubsection{对比测试 OpenMP 和 Pthread 优化算法}
 
@@ -800,5 +815,25 @@ ThreadPool pool(num_threads);
 在 \texttt{CRT\_combine} 中，内层循环 \texttt{for (u64 j = 0; j < n; j++)} 对系数进行遍历。在一次外层循环（固定 \texttt{i}，即固定当前模数 \texttt{CRT\_MODS[i]}）中，它顺序读取 \texttt{ab\_crt[i][j]} (即 \texttt{ab\_crt[i]} 数组的元素)，并顺序读写 \texttt{ab[j]} (合并结果数组的元素)。这种连续的、线性的内存访问模式具有良好的空间局部性，非常有利于缓存的命中率。
 
 而在 \texttt{CRT\_combine\_2} 中，外层循环 \texttt{for (u64 i = 0; i < n; ++i)} 对系数进行遍历。对于每个系数 \texttt{ab[i]}，其内层循环 \texttt{for (u64 j = 1; j < CRT\_NUMS; ++j)} 需要依次访问 \texttt{ab\_crt[0][i]}, \texttt{ab\_crt[1][i]}, ..., \texttt{ab\_crt[CRT\_NUMS-1][i]}。由于 \texttt{ab\_crt} 是一个指针数组 (\texttt{u64 **ab\_crt})，其中每个 \texttt{ab\_crt[k]} 指向一个独立分配的内存块。因此，\texttt{ab\_crt[0][i]} 和 \texttt{ab\_crt[1][i]} 在物理内存上是不连续的。当处理系数 \texttt{i} 时，\texttt{CRT\_combine\_2} 需要在 \texttt{CRT\_NUMS} 个不同的内存区域中读取数据（\texttt{ab\_crt[0]+i}, \texttt{ab\_crt[1]+i}, ...）。这种跨多个数组的"列式"访问模式，相较于 \texttt{CRT\_combine} 中对单个 \texttt{ab\_crt[k]} 数组的"行式"扫描，更容易导致缓存冲突和未命中，尤其是在 \texttt{n} 较大，各个 \texttt{ab\_crt[k]} 数组无法同时完全载入缓存时。
+
+\section{总结}
+
+本文详细探讨了基于 NTT 算法的多项式乘法的多线程优化实现。通过实验和分析，我们得到了以下主要结论：
+
+\paragraph{多线程优化效果与问题规模相关}
+
+在小规模数据（如\texttt{n=4}）下，多线程优化反而会导致性能下降。这是因为线程创建、管理和同步的开销远超过并行计算带来的收益。在大规模数据（如\texttt{n=131072}）下，多线程优化能显著提升性能。其中，相比于NTT串行算法， OpenMP 优化和 Pthread 优化分别实现了约 61.0\% 和 30.1\% 的性能提升；相比于CRT多模数合并的串行算法，Pthread优化的CRT算法实现了约267.3\%的性能提升。
+
+\paragraph{线程数设置与实际性能的关系}
+
+我们发现更改\texttt{test.sh}中的线程数设置对性能影响较小。通过调试和分析，我们发现这是因为\texttt{std::thread::hardware\_concurrency()}和 OpenMP 运行时库倾向于使用系统层面所有可用的逻辑核心，而不受脚本的线程数限制。
+
+\paragraph{OpenMP 与 Pthread 的性能对比} 通过 perf 分析，我们发现 OpenMP 版本的用户态执行时间（约 0.0257 秒）明显低于 Pthread 版本（约 0.0294 秒）。虽然 Pthread 版本在 IPC 和 CPU 周期数等微观指标上略占优势，但其线程管理开销较大，导致整体性能不如 OpenMP 版本。这说明编译器优化的 OpenMP 并行指令相比手动实现的线程池具有更低的运行时开销。
+
+\paragraph{CRT 优化的两种实现比较}
+
+\texttt{CRT\_combine}（约 440-450 µs）显著快于\texttt{CRT\_combine\_2}（约 900-910 µs）。经过理论分析，我们认为性能差异主要源于两个方面。在算法策略方面，\texttt{CRT\_combine}通过迭代方式有效复用了中间计算结果，大大减少了高开销操作（如模逆元计算）的重复次数；在内存访问模式方面，\texttt{CRT\_combine}采用的"行式"扫描具有更好的缓存局部性，相比\texttt{CRT\_combine\_2}的"列式"访问能获得更高的缓存命中率。
+
+这些发现不仅帮助我们理解了多线程优化在不同场景下的效果，也为今后的并行程序设计提供了有价值的参考。
 
 \end{document}
