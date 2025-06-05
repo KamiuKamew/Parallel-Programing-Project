@@ -449,3 +449,34 @@ cd home
 cd s2312237
 bash run_all_tests.sh
 git checkout master-new
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 8 8
+cd ntt
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 8 8
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 7 7
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 6 6
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 5 5
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 8 8
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 7 7
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 6 6
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 5 5
+bash run.sh
+cd ..
+bash run.sh
+cd ntt
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 8 8
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 7 7
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 6 6
+perf stat -e cycles,instructions,cache-references,cache-misses bash test.sh 2 5 5
+bash b.sh
+bash b.sh 2 8 8
+bash test.sh 2 8 8
+cd ntt
+bash a.sh
+bash test.sh
+bash test.sh 2 8 8
+cd ..
+bash run.sh
+. "\home\s2312237\.cursor-server\cli\servers\Stable-02270c8441bdc4b2fdbc30e6f470a589ec78d600\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+/home/s2312237/ntt/main &
+. "\home\s2312237\.cursor-server\cli\servers\Stable-02270c8441bdc4b2fdbc30e6f470a589ec78d600\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
+ps aux | grep /home/s2312237/ntt/main
