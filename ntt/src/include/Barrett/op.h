@@ -19,6 +19,9 @@ public:
             T2 correction = numerator / _mod;
             r += correction;
         }
+        /*
+        注：此处使用迭代提高精度是为了在p = 1337006139375617的情况下保持精度，但是发现这样似乎没用，所以后面换成CRT实现绕过大模数了。
+        */
 
         barrett_r = r;
     }
