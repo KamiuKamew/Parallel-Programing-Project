@@ -6,12 +6,17 @@
 
 #include "../general/utils.h"
 #include "../OpenMP_Barrett/ntt.h"
-
 #include "../CRT/const.h"
 #include "../CRT/crt.h"
+#include <algorithm>
+
+#include <mpi.h>
+#ifndef USE_MPI
+#define USE_MPI
+#endif
 
 /**
- * @brief 使用NTT和CRT优化的多项式乘法
+ * @brief 使用NTT和CRT优化的多项式乘法 (MPI多进程版本)
  *
  * @param a 多项式系数 (assumed non-negative)
  * @param b 多项式系数 (assumed non-negative)
@@ -21,78 +26,145 @@
  */
 inline void poly_multiply_ntt_mpi(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
 {
-    u64 n_expanded = expand_n(2 * n - 1);
-    u64 **ab_crt = new u64 *[CRT_NUMS];
-    u128 *ab_u128 = new u128[n_expanded];
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    for (u64 i = 0; i < CRT_NUMS; i++)
+    // 广播基本参数
+    MPI_Bcast((void *)&n, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+    MPI_Bcast((void *)&p, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+
+    u64 n_expanded = expand_n(2 * n - 1);
+
+    // 广播输入数据到所有进程
+    MPI_Bcast((void *)a, n, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+    MPI_Bcast((void *)b, n, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+    MPI_Bcast((void *)&n_expanded, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+
+    // 只有主进程需要分配完整的CRT结果数组
+    u64 **ab_crt = nullptr;
+    u128 *ab_u128 = nullptr;
+
+    if (rank == 0)
     {
-        ab_crt[i] = new u64[n_expanded]{};
+        ab_crt = new u64 *[CRT_NUMS];
+        for (u64 i = 0; i < CRT_NUMS; i++)
+        {
+            ab_crt[i] = new u64[n_expanded]{};
+        }
+        ab_u128 = new u128[n_expanded];
+    }
+
+    // 每个进程负责的CRT模数数量
+    u64 mods_per_process = (CRT_NUMS + size - 1) / size; // 向上取整
+    u64 start_mod = rank * mods_per_process;
+    u64 end_mod = std::min(start_mod + mods_per_process, (u64)CRT_NUMS);
+
+    // 为当前进程分配本地结果数组
+    u64 local_mod_count = end_mod - start_mod;
+    u64 **local_ab_crt = nullptr;
+    if (local_mod_count > 0)
+    {
+        local_ab_crt = new u64 *[local_mod_count];
+        for (u64 i = 0; i < local_mod_count; i++)
+        {
+            local_ab_crt[i] = new u64[n_expanded]{};
+        }
+    }
+
+    // 每个进程计算分配给它的CRT模数
+    for (u64 i = 0; i < local_mod_count; i++)
+    {
+        u64 mod_idx = start_mod + i;
 
         // 创建临时数组，对输入系数进行模数归约
         u64 *a_mod = new u64[n];
         u64 *b_mod = new u64[n];
         for (u64 j = 0; j < n; j++)
         {
-            a_mod[j] = a[j] % CRT_MODS[i];
-            b_mod[j] = b[j] % CRT_MODS[i];
+            a_mod[j] = a[j] % CRT_MODS[mod_idx];
+            b_mod[j] = b[j] % CRT_MODS[mod_idx];
         }
 
-        /*
-        ## 问题原因与解决方案
-
-        ### **问题根本原因：**
-        `poly_multiply_ntt_mpi` 与 `poly_multiply_ntt_crt` 的关键区别在于**输入系数的处理方式**：
-
-        1. **`poly_multiply_ntt_crt`：** 使用模板版本的 `poly_multiply_ntt`，该函数内部会自动对输入系数进行模数归约
-        2. **`poly_multiply_ntt_mpi`：** 直接调用 `poly_multiply_ntt_omp_Barrett`，但没有对输入系数进行预处理
-
-        ### **具体问题：**
-        当输入多项式系数超过CRT模数时（如大模数测试用例中的 `992009819965388`），直接传递给 `poly_multiply_ntt_omp_Barrett` 会导致：
-        - 输入值远超过工作模数（如 `998244353`）
-        - Barrett约简和Montgomery算法无法正确处理这些超大输入
-        - 最终导致计算结果错误
-
-        ### **解决方案：**
-        在调用 `poly_multiply_ntt_omp_Barrett` 之前，对输入系数进行模数归约：
-
-        ```cpp
-        // 创建临时数组，对输入系数进行模数归约
-        u64 *a_mod = new u64[n];
-        u64 *b_mod = new u64[n];
-        for (u64 j = 0; j < n; j++) {
-            a_mod[j] = a[j] % CRT_MODS[i];
-            b_mod[j] = b[j] % CRT_MODS[i];
-        }
-
-        poly_multiply_ntt_omp_Barrett(a_mod, b_mod, ab_crt[i], n, CRT_MODS[i], CRT_ROOTS[i]);
-        ```
-
-        ### **验证结果：**
-        - ✅ 所有5个测试用例都通过
-        - ✅ 包括最困难的 `n=131072, p=1337006139375617` 大模数测试
-        - ✅ 性能保持在合理范围内（约500微秒）
-
-        这个修复确保了 `poly_multiply_ntt_mpi` 能够正确处理任意大小的输入系数，使其行为与 `poly_multiply_ntt_crt` 完全一致。
-        */
-
-        poly_multiply_ntt_omp_Barrett(a_mod, b_mod, ab_crt[i], n, CRT_MODS[i], CRT_ROOTS[i]);
+        poly_multiply_ntt_omp_Barrett(a_mod, b_mod, local_ab_crt[i], n,
+                                      CRT_MODS[mod_idx], CRT_ROOTS[mod_idx]);
 
         delete[] a_mod;
         delete[] b_mod;
     }
 
-    for (u64 i = 0; i < n_expanded; ++i)
-        ab_u128[i] = ab_crt[0][i];
+    // 收集所有结果到主进程
+    if (rank == 0)
+    {
+        // 主进程：复制自己的结果
+        for (u64 i = 0; i < local_mod_count; i++)
+        {
+            for (u64 j = 0; j < n_expanded; j++)
+            {
+                ab_crt[start_mod + i][j] = local_ab_crt[i][j];
+            }
+        }
 
-    CRT_combine(ab_u128, ab_crt, n_expanded);
-    // CRT_combine_garner(ab_u128, ab_crt, n_expanded);
+        // 接收其他进程的结果
+        for (int src_rank = 1; src_rank < size; src_rank++)
+        {
+            u64 src_start = src_rank * mods_per_process;
+            u64 src_end = std::min(src_start + mods_per_process, (u64)CRT_NUMS);
+            u64 src_count = src_end - src_start;
 
-    for (u64 i = 0; i < n_expanded; ++i)
-        ab[i] = ab_u128[i] % p;
+            if (src_count > 0)
+            {
+                for (u64 i = 0; i < src_count; i++)
+                {
+                    MPI_Recv(ab_crt[src_start + i], n_expanded, MPI_UNSIGNED_LONG_LONG,
+                             src_rank, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                }
+            }
+        }
 
-    delete[] ab_u128;
-    for (u64 i = 0; i < CRT_NUMS; ++i)
-        delete[] ab_crt[i];
-    delete[] ab_crt;
+        // 执行CRT合并
+        for (u64 i = 0; i < n_expanded; ++i)
+            ab_u128[i] = ab_crt[0][i];
+
+        CRT_combine(ab_u128, ab_crt, n_expanded);
+
+        // 最终模数归约
+        for (u64 i = 0; i < n_expanded; ++i)
+            ab[i] = ab_u128[i] % p;
+    }
+    else
+    {
+        // 非主进程：发送结果给主进程
+        for (u64 i = 0; i < local_mod_count; i++)
+        {
+            MPI_Send(local_ab_crt[i], n_expanded, MPI_UNSIGNED_LONG_LONG,
+                     0, i, MPI_COMM_WORLD);
+        }
+    }
+
+    // 将最终结果广播给所有进程
+    MPI_Bcast((void *)ab, n_expanded, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+
+    // 清理内存
+    if (local_ab_crt)
+    {
+        for (u64 i = 0; i < local_mod_count; i++)
+        {
+            delete[] local_ab_crt[i];
+        }
+        delete[] local_ab_crt;
+    }
+
+    if (rank == 0)
+    {
+        if (ab_crt)
+        {
+            for (u64 i = 0; i < CRT_NUMS; i++)
+            {
+                delete[] ab_crt[i];
+            }
+            delete[] ab_crt;
+        }
+        delete[] ab_u128;
+    }
 }

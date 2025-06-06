@@ -16,6 +16,7 @@
 #include <string>
 #include <sys/time.h>
 // #include <omp.h>
+#include "src/include/MPI/config.h"
 
 std::string path_read = "/nttdata/";
 std::string path_check = "/nttdata/";
@@ -101,6 +102,9 @@ template <typename T>
 int _main(int argc, char *argv[])
 {
   T a[300000], b[300000], ab[300000];
+
+  MPI_GET_RANK(rank);
+
   // 保证输入的所有模数的原根均为 3, 且模数都能表示为 a \times 4 ^ k + 1 的形式
   // 输入模数分别为 7340033 104857601 469762049 263882790666241
   // 第四个模数超过了整型表示范围, 如果实现此模数意义下的多项式乘法需要修改框架
@@ -115,7 +119,9 @@ int _main(int argc, char *argv[])
   {
     long double ans = 0;
     T n_, p_;
-    fRead(a, b, &n_, &p_, i);
+
+    MPI_ONLY_MAIN { fRead(a, b, &n_, &p_, i); }
+
     memset(ab, 0, sizeof(ab));
     auto Start = std::chrono::high_resolution_clock::now();
 
@@ -134,22 +140,32 @@ int _main(int argc, char *argv[])
     auto End = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;
     ans += elapsed.count();
-    fCheck(ab, n_, i);
-    std::cout << "average latency for n = " << n_ << " p = " << p_ << " : "
-              << ans << " (us) " << std::endl;
-    // 可以使用 fWrite 函数将 ab 的输出结果打印到 files 文件夹下
-    // 禁止使用 cout 一次性输出大量文件内容
-    fWrite(ab, n_, i);
+
+    MPI_ONLY_MAIN
+    {
+      fCheck(ab, n_, i);
+      std::cout << "average latency for n = " << n_ << " p = " << p_ << " : "
+                << ans << " (us) " << std::endl;
+      // 可以使用 fWrite 函数将 ab 的输出结果打印到 files 文件夹下
+      // 禁止使用 cout 一次性输出大量文件内容
+      fWrite(ab, n_, i);
+    }
   }
   return 0;
 }
 
 int main(int argc, char *argv[])
 {
+
+  MPI_INIT(argc, argv);
+
   path_read = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.nttdata/";
   path_check = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.nttdata/";
   path_write = "/home/hexay/projects/Lab Proj/Parallel-Programing-Project/.file/";
 
-  _main<u64>(argc, argv);
-  return 0;
+  int result = _main<u64>(argc, argv);
+
+  MPI_FINALIZE();
+
+  return result;
 }
