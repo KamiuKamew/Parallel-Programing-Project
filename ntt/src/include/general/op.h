@@ -32,7 +32,7 @@ public:
   }
   T inv(T x) const { return pow(x, mod - 2); }
 
-private:
+protected:
   T mod;
 };
 
