@@ -51,7 +51,7 @@ check_environment() {
     fi
     
     # 检查代码目录
-    if [ ! -d "ntt" ]; then
+    if [ ! -d "../ntt" ]; then
         error "ntt代码目录未找到"
         exit 1
     fi
@@ -63,7 +63,7 @@ check_environment() {
 compile_code() {
     log "编译测试代码..."
     
-    cd ntt
+    cd ../ntt
     
     # 注意：由于代码结构原因，我们统一使用MPI版本，通过进程数控制并行度
     log "编译代码..."
@@ -113,7 +113,7 @@ run_single_test() {
 test_serial_baseline() {
     log "开始串行性能基准测试..."
     
-    cd ntt
+    cd ../ntt
     
     # 小规模测试（验证正确性）
     run_single_test "串行-小规模" \
@@ -140,7 +140,7 @@ test_serial_baseline() {
 test_mpi_scalability() {
     log "开始MPI可扩展性测试..."
     
-    cd ntt
+    cd ../ntt
     
     local process_counts=(1 2 4 8)
     local test_cases=("input1.txt" "input2.txt" "input3.txt")
@@ -166,7 +166,7 @@ test_mpi_scalability() {
 test_hybrid_parallel() {
     log "开始混合并行测试..."
     
-    cd ntt
+    cd ../ntt
     
     # 设置不同的OpenMP线程数
     local omp_threads=(1 2 4)
@@ -192,7 +192,7 @@ test_hybrid_parallel() {
 test_communication_overhead() {
     log "开始通信开销分析测试..."
     
-    cd ntt
+    cd ../ntt
     
     # 使用调试版本来获取通信开销信息
     log "编译调试版本..."
@@ -214,7 +214,7 @@ test_communication_overhead() {
 test_strong_scalability() {
     log "开始强可扩展性测试..."
     
-    cd ntt
+    cd ../ntt
     
     # 固定问题规模，增加进程数
     local process_counts=(1 2 4 8 16)
@@ -238,7 +238,7 @@ test_strong_scalability() {
 test_performance_profiling() {
     log "开始性能profile分析..."
     
-    cd ntt
+    cd ../ntt
     
     # 使用time命令进行详细计时
     run_single_test "Profile-串行" \
