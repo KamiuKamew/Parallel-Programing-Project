@@ -63,6 +63,11 @@
 #define MPI_ONLY_MAIN if (rank == 0)
 #define MPI_BARRIER() MPI_Barrier(MPI_COMM_WORLD)
 
+// MPI 计时宏定义
+#define TIMER_START() double start_time = MPI_Wtime()
+#define TIMER_END() double end_time = MPI_Wtime()
+#define TIMER_ELAPSED() ((end_time - start_time) * 1000.0) // 转换为毫秒
+
 #else
 
 #define MPI_INIT(argc, argv)
@@ -70,5 +75,11 @@
 #define MPI_GET_RANK(rank) int rank = 0
 #define MPI_ONLY_MAIN
 #define MPI_BARRIER()
+
+// 标准 chrono 计时宏定义
+#include <chrono>
+#define TIMER_START() auto start_time = std::chrono::high_resolution_clock::now()
+#define TIMER_END() auto end_time = std::chrono::high_resolution_clock::now()
+#define TIMER_ELAPSED() (std::chrono::duration<double, std::ratio<1, 1000>>(end_time - start_time).count()) // 毫秒
 
 #endif

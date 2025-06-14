@@ -8,7 +8,6 @@
 #include "src/include/OpenMP_Barrett/ntt.h"
 #include "src/include/MPI/ntt.h"
 
-#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -16,7 +15,7 @@
 #include <string>
 #include <sys/time.h>
 // #include <omp.h>
-#include "src/include/MPI/config.h"
+#include "src/include/config.h"
 
 std::string path_read = "/nttdata/";
 std::string path_check = "/nttdata/";
@@ -123,7 +122,7 @@ int _main(int argc, char *argv[])
     MPI_ONLY_MAIN { fRead(a, b, &n_, &p_, i); }
 
     memset(ab, 0, sizeof(ab));
-    auto Start = std::chrono::high_resolution_clock::now();
+    TIMER_START();
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
@@ -137,9 +136,8 @@ int _main(int argc, char *argv[])
     // poly_multiply_ntt_omp_Barrett(a, b, ab, n_, p_);
     poly_multiply_ntt_mpi(a, b, ab, n_, p_);
 
-    auto End = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::ratio<1, 1000>> elapsed = End - Start;
-    ans += elapsed.count();
+    TIMER_END();
+    ans += TIMER_ELAPSED();
 
     MPI_ONLY_MAIN
     {
@@ -169,3 +167,11 @@ int main(int argc, char *argv[])
 
   return result;
 }
+
+/*
+MPI 编译运行：
+
+cd ntt
+mpic++ -O3 -fopenmp -DUSE_MPI -o main main.cc
+mpirun -np 1 ./main
+*/

@@ -457,6 +457,37 @@ inline void poly_multiply_ntt_mpi(u64 *a, u64 *b, u64 *ab, u64 n, u64 p)
 
 在理论分析后，我们进行了代码设计与实现。我们实现了多进程并行计算，将 CRT 的不同模数分配给不同的 MPI 进程，并在每个进程内部使用 OpenMP 进行进一步的多线程优化。
 
+\subsubsection{MPI 环境下的高精度计时优化}
+
+在 MPI 并行计算中，准确的性能测量对于评估并行效率至关重要。传统的 \texttt{std::chrono} 计时方法在单机环境下表现良好，但在 MPI 多进程环境中可能面临时钟同步和精度问题。为了获得更准确的并行性能数据，我们实现了基于 \texttt{MPI\_Wtime()} 的高精度计时方案。
+
+\paragraph{设计思路与优势}
+
+\texttt{MPI\_Wtime()} 是 MPI 标准提供的高精度计时函数，具有几个显著优势。首先是\textbf{跨进程一致性}，MPI 实现通常会确保不同进程间的时钟同步，提供一致的时间基准。其次是\textbf{高精度保证}，\texttt{MPI\_Wtime()} 通常提供微秒级甚至更高的时间精度。最后是\textbf{标准化接口}，作为 MPI 标准的一部分，在所有符合标准的 MPI 实现中都能保证可用性和一致性。
+
+\paragraph{条件编译实现}
+
+我们在 \texttt{ntt/src/include/config.h} 中实现了智能的计时宏系统，能够根据编译环境自动选择最优的计时方式：
+
+\begin{lstlisting}[language=C++]
+#ifdef USE_MPI
+// MPI 计时宏定义
+#define TIMER_START() double start_time = MPI_Wtime()
+#define TIMER_END() double end_time = MPI_Wtime()
+#define TIMER_ELAPSED() ((end_time - start_time) * 1000.0)  // 转换为毫秒
+
+#else
+// 标准 chrono 计时宏定义
+#include <chrono>
+#define TIMER_START() auto start_time = std::chrono::high_resolution_clock::now()
+#define TIMER_END() auto end_time = std::chrono::high_resolution_clock::now()
+#define TIMER_ELAPSED() (std::chrono::duration<double, std::ratio<1, 1000>>(end_time - start_time).count())
+
+#endif
+\end{lstlisting}
+
+这种设计的核心优势在于\textbf{透明性}和\textbf{兼容性}。代码中的计时逻辑保持完全一致，只需要调用统一的 \texttt{TIMER\_START()}、\texttt{TIMER\_END()} 和 \texttt{TIMER\_ELAPSED()} 宏接口。编译器会根据是否定义了 \texttt{USE\_MPI} 宏自动选择合适的实现，既保证了 MPI 环境下的高精度计时，又维持了非 MPI 环境下的正常功能。
+
 \subsubsection{线程支持级别}
 
 我们在 \texttt{ntt/src/include/MPI/config.h} 中实现了完整的 MPI 线程支持配置。这个配置系统通过条件编译和运行时检查，确保了不同环境下的兼容性和性能。
