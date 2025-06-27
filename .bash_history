@@ -480,3 +480,17 @@ bash run.sh
 /home/s2312237/ntt/main &
 . "\home\s2312237\.cursor-server\cli\servers\Stable-02270c8441bdc4b2fdbc30e6f470a589ec78d600\server\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration-bash.sh"
 ps aux | grep /home/s2312237/ntt/main
+mpic++ -O3 -fopenmp -DUSE_MPI -o main main.cc
+bash test.sh 4 1 1
+mpic++ -O3 -fopenmp -DUSE_MPI -o main main.cc
+bash test.sh 4 1 1
+qstat -n
+qdel --all
+qdel -a
+qdel all
+qdel "all"
+qdel
+qdel -a all
+qstat -n
+qdel -a all
+qstat -n
