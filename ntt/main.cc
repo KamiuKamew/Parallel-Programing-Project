@@ -6,7 +6,8 @@
 #include "src/include/pthread_simple/ntt.h"
 #include "src/include/Barrett/ntt.h"
 #include "src/include/OpenMP_Barrett/ntt.h"
-#include "src/include/MPI/ntt.h"
+// #include "src/include/MPI/ntt.h"
+#include "src/include/CUDA/ntt.h"
 
 #include <cstring>
 #include <fstream>
@@ -126,7 +127,13 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    // poly_multiply_ntt(a, b, ab, n_, p_);
+#ifdef USE_CPU_ONLY
+    poly_multiply_ntt(a, b, ab, n_, p_); // CPU基础版本
+#else
+    poly_multiply_ntt_gpu(a, b, ab, n_, p_); // GPU版本
+#endif
+    // poly_multiply_ntt_gpu_basic(a, b, ab, n_, p_);
+    // poly_multiply_ntt_gpu_optimized(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
