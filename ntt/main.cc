@@ -1,16 +1,17 @@
-#include "src/include/ntt.h"
+// #include "src/include/ntt.h"
 // #include "src/include/simd/ntt.h"
-#include "src/include/OpenMP/ntt.h"
-#include "src/include/CRT/ntt.h"
-#include "src/include/pthread_crt/ntt.h"
-#include "src/include/pthread_simple/ntt.h"
-#include "src/include/Barrett/ntt.h"
-#include "src/include/OpenMP_Barrett/ntt.h"
-#include "src/include/MPI/ntt.h"
+// #include "src/include/OpenMP/ntt.h"
+// #include "src/include/CRT/ntt.h"
+// #include "src/include/pthread_crt/ntt.h"
+// #include "src/include/pthread_simple/ntt.h"
+// #include "src/include/Barrett/ntt.h"
+// #include "src/include/OpenMP_Barrett/ntt.h"
+// #include "src/include/MPI/ntt.h"
+#include "src/include/CUDA/ntt.h"
 
 #include <cstring>
 #include <fstream>
-#include <iomanip>
+// #include <iomanip>
 #include <iostream>
 #include <string>
 #include <sys/time.h>
@@ -126,7 +127,7 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    poly_multiply_ntt(a, b, ab, n_, p_);
+    // poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
@@ -135,6 +136,7 @@ int _main(int argc, char *argv[])
     // poly_multiply_ntt_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_mpi(a, b, ab, n_, p_);
+    poly_multiply_ntt_cuda_parallel(a, b, ab, n_, p_);
 
     TIMER_END();
     ans += TIMER_ELAPSED();

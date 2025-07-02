@@ -1,0 +1,42 @@
+# CUDA NTT Makefile
+NVCC = nvcc
+CXX = g++
+NVCCFLAGS = -O3 -std=c++11 -arch=sm_89 --expt-relaxed-constexpr
+CXXFLAGS = -O3 -std=c++11
+
+# 源文件
+CUDA_SOURCES = src/include/CUDA/ntt_step3.cu
+CPP_SOURCES = main.cc
+HEADERS = src/include/CUDA/ntt.h src/include/ntt.h src/include/transform.h src/include/general/utils.h src/include/general/op.h src/include/config.h
+
+# 目标文件
+CUDA_OBJECTS = $(CUDA_SOURCES:.cu=.o)
+CPP_OBJECTS = $(CPP_SOURCES:.cc=.o)
+
+# 可执行文件
+TARGET = main_cuda
+
+# 默认目标
+all: $(TARGET)
+
+# 编译规则
+$(TARGET): $(CUDA_OBJECTS) $(CPP_OBJECTS)
+	$(NVCC) $(NVCCFLAGS) -o $@ $^
+
+# CUDA源文件编译
+%.o: %.cu $(HEADERS)
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+
+# C++源文件编译  
+%.o: %.cc $(HEADERS)
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+
+# 清理
+clean:
+	rm -f $(CUDA_OBJECTS) $(CPP_OBJECTS) $(TARGET)
+
+# 运行测试
+test: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean test 
