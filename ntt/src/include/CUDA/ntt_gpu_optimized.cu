@@ -1,3 +1,4 @@
+#include "../general/utils.h" // 包含expand_n, expand_a, bit_reverse_permute
 #include "ntt.h"
 #include <cmath>
 #include <iostream>
@@ -13,8 +14,12 @@
     }                                                                          \
   } while (0)
 
-// 引入基础模乘算法定义
-enum MulMode { MUL_NAIVE = 0, MUL_MONT = 1, MUL_BARRETT = 2 };
+// 前向声明：使用基础GPU文件中的函数
+template <typename T>
+void generate_twiddle_table(std::vector<T> &table, T n, T p, T omega,
+                            bool inverse);
+
+// 注意：MulMode 已在基础GPU文件中定义
 
 // =============================================================================
 // 基础GPU设备函数（从原实现复制）
@@ -286,78 +291,10 @@ static GpuMemoryPool<u32> gpu_pool_u32;
 static GpuMemoryPool<u64> gpu_pool_u64;
 
 // =============================================================================
-// 基础算法函数（从原实现引用）
+// GPU专用函数（不与CPU函数重复）
 // =============================================================================
 
-// 扩展数组大小到2的幂
-template <typename T> T expand_n(T n) {
-  T expanded = 1;
-  while (expanded < n) {
-    expanded <<= 1;
-  }
-  return expanded;
-}
-
-// 扩展数组内容
-template <typename T> T *expand_a(T *a, T n, T n_expanded) {
-  T *expanded = new T[n_expanded];
-  for (T i = 0; i < n; i++) {
-    expanded[i] = a[i];
-  }
-  for (T i = n; i < n_expanded; i++) {
-    expanded[i] = 0;
-  }
-  return expanded;
-}
-
-// 位反转置换
-template <typename T> void bit_reverse_permute(T *a, T n) {
-  for (T i = 0; i < n; i++) {
-    T j = 0;
-    T temp = i;
-    T log_n = 0;
-    T temp_n = n;
-    while (temp_n > 1) {
-      temp_n >>= 1;
-      log_n++;
-    }
-
-    for (T k = 0; k < log_n; k++) {
-      j <<= 1;
-      j |= (temp & 1);
-      temp >>= 1;
-    }
-
-    if (i < j) {
-      T swap = a[i];
-      a[i] = a[j];
-      a[j] = swap;
-    }
-  }
-}
-
-template <typename T>
-void generate_twiddle_table(std::vector<T> &table, T n, T p, T omega,
-                            bool inverse) {
-  table.resize(n);
-  MontMod<T> mont(p);
-  T omega_mont = mont.from_T(omega);
-  if (inverse)
-    omega_mont = mont.inv(omega_mont);
-  T one_mont = mont.from_T(1);
-
-  for (int level = 0; (T(1) << level) < n; ++level) {
-    T mid = T(1) << level;
-    T exp = (p - 1) / (mid << 1);
-    T Wn_mont = mont.pow(omega_mont, exp);
-    T w = one_mont;
-    T offset = mid - 1;
-    for (T k = 0; k < mid; ++k) {
-      table[offset + k] = w;
-      w = mont.mul(w, Wn_mont);
-    }
-  }
-}
+// 使用基础GPU文件中的generate_twiddle_table函数
 
 template <typename T>
 __global__ void pointwise_multiply_kernel_correct(T *a_mont, T *b_mont,

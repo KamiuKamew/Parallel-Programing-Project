@@ -1,0 +1,28 @@
+CXX = nvcc
+CXXFLAGS = -std=c++17 -O3 -arch=sm_75 --extended-lambda
+
+INCLUDE_DIRS = -I.
+SOURCE_DIR = ntt/src
+
+# 基础源文件
+BASIC_SOURCES = $(SOURCE_DIR)/include/general/mod.cpp \
+                $(SOURCE_DIR)/include/general/mult.cpp \
+                $(SOURCE_DIR)/include/general/utils.cpp \
+                $(SOURCE_DIR)/include/cpu/ntt_cpu.cpp
+
+# 优化测试目标
+test_optimization: test_optimization_simple.cu $(BASIC_SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -o $@ $^
+
+# 简单性能测试
+simple_performance: simple_performance_test.cu $(BASIC_SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -o $@ $^
+
+# 基础GPU测试
+test_basic_gpu: test_basic_gpu.cu $(BASIC_SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -o $@ $^
+
+clean:
+	rm -f test_optimization simple_performance test_basic_gpu
+
+.PHONY: clean 

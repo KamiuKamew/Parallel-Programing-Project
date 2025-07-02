@@ -1,0 +1,43 @@
+# GPU NTT优化版本编译脚本
+NVCC = nvcc
+CXX = g++
+
+# 编译选项
+NVCC_FLAGS = -O3 -arch=sm_75 -std=c++17 --expt-relaxed-constexpr
+CXX_FLAGS = -O3 -std=c++17 -fopenmp
+
+# 包含路径
+INCLUDE_DIRS = -I. -Intt/src/include
+
+# 源文件
+GPU_OPTIMIZED_SOURCES = ntt/src/include/CUDA/ntt_gpu_optimized.cu
+
+# 目标文件
+GPU_OPT_TARGET = test_gpu_optimization_simple
+BENCHMARK_TARGET = benchmark_gpu_optimized
+
+# 默认目标
+all: $(GPU_OPT_TARGET)
+
+# 编译GPU优化测试
+$(GPU_OPT_TARGET): test_gpu_optimization_simple.cu $(GPU_OPTIMIZED_SOURCES)
+	$(NVCC) $(NVCC_FLAGS) $(INCLUDE_DIRS) -o $@ $^
+
+# 运行测试
+test: $(GPU_OPT_TARGET)
+	./$(GPU_OPT_TARGET)
+
+# 生成性能报告图表的Python脚本
+analyze_results:
+	@echo "生成性能分析图表..."
+	@python3 scripts/plot_gpu_performance.py
+
+# 清理
+clean:
+	rm -f $(GPU_OPT_TARGET) $(BENCHMARK_TARGET) *.csv *.png
+
+# 完整测试流程
+full_test: clean $(GPU_OPT_TARGET) test analyze_results
+	@echo "GPU优化测试完成，请查看生成的性能报告"
+
+.PHONY: all test clean analyze_results full_test 
