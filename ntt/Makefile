@@ -27,6 +27,11 @@ perf: performance_compare.cu $(INCDIR)/CUDA/ntt_gpu.o
 	@echo "正在运行性能对比测试..."
 	./performance_compare
 
+test_fixed: comprehensive_mod_mul_test_fixed.cu $(INCDIR)/CUDA/ntt_gpu.o
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o test_fixed $^
+	@echo "正在运行修复版性能测试..."
+	./test_fixed
+
 clean:
 	rm -f main_cpu main_gpu performance_compare $(INCDIR)/CUDA/ntt_gpu.o *.csv
 
