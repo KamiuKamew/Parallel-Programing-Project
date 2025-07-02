@@ -1,0 +1,32 @@
+# GPU NTT Makefile
+# 需要安装CUDA toolkit
+
+# 编译器和标志
+NVCC = nvcc
+CXX = g++
+NVCCFLAGS = -std=c++11 -O2 -arch=sm_50
+CXXFLAGS = -std=c++11 -O2
+
+# 包含目录
+INCLUDES = -Isrc/include
+
+# 源文件
+GPU_SOURCES = src/include/CUDA/ntt_gpu.cu
+MAIN_SOURCE = test_gpu_basic.cc
+
+# 输出文件
+TARGET = test_gpu_basic
+
+# 编译规则
+$(TARGET): $(MAIN_SOURCE) $(GPU_SOURCES)
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $(TARGET) $(MAIN_SOURCE) $(GPU_SOURCES)
+
+# 清理
+clean:
+	rm -f $(TARGET)
+
+# 运行测试
+test: $(TARGET)
+	./$(TARGET)
+
+.PHONY: clean test 

@@ -1,0 +1,30 @@
+# GPU NTT Performance Test Makefile
+
+# 编译器和标志
+NVCC = nvcc
+CXX = g++
+NVCCFLAGS = -std=c++11 -O2 -arch=sm_50
+CXXFLAGS = -std=c++11 -O2
+
+# 包含目录
+INCLUDES = -Isrc/include
+
+# 源文件
+GPU_SOURCES = src/include/CUDA/ntt_gpu.cu performance_compare.cu
+
+# 输出文件
+TARGET = performance_compare
+
+# 编译规则
+$(TARGET): $(GPU_SOURCES)
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $(TARGET) $(GPU_SOURCES)
+
+# 清理
+clean:
+	rm -f $(TARGET)
+
+# 运行性能测试
+test: $(TARGET)
+	./$(TARGET)
+
+.PHONY: clean test 
