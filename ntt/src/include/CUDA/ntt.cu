@@ -233,6 +233,20 @@ void poly_multiply_ntt_cuda_serial(T *a, T *b, T *ab, T n, T p, T OMEGA) {
   std::cout << "[CUDA Serial] 基础串行版本NTT完成" << std::endl;
 }
 
+// 优化版本v2的包装函数
+extern void poly_multiply_gpu_optimized_v2_fixed(u64 *a, u64 *b, u64 *result,
+                                                 u64 n);
+
+void poly_multiply_ntt_cuda_optimized_v2(u64 *a, u64 *b, u64 *ab, u64 n, u64 p,
+                                         u64 OMEGA) {
+  std::cout << "[CUDA优化v2] 开始智能共享内存版本NTT..." << std::endl;
+
+  // 调用我们的修复版v2函数
+  poly_multiply_gpu_optimized_v2_fixed(a, b, ab, n);
+
+  std::cout << "[CUDA优化v2] 智能共享内存版本NTT完成" << std::endl;
+}
+
 // 显式实例化模板
 template void poly_multiply_ntt_cuda_serial<u64>(u64 *a, u64 *b, u64 *ab, u64 n,
                                                  u64 p, u64 OMEGA);

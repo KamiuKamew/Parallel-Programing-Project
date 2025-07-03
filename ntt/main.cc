@@ -7,7 +7,7 @@
 // #include "src/include/Barrett/ntt.h"
 // #include "src/include/OpenMP_Barrett/ntt.h"
 // #include "src/include/MPI/ntt.h"
-#include "src/include/CUDA/ntt.h"
+#include "src/include/ntt_cuda.h"
 
 #include <cstring>
 #include <fstream>
@@ -136,7 +136,18 @@ int _main(int argc, char *argv[])
     // poly_multiply_ntt_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_mpi(a, b, ab, n_, p_);
-    poly_multiply_ntt_cuda_parallel(a, b, ab, n_, p_);
+    // poly_multiply_ntt_cuda_parallel(a, b, ab, n_, p_);
+#ifdef GPU_NTT_V1
+    poly_multiply_gpu_optimized_v1(a, b, ab, n_, p_);
+#elif defined(GPU_NTT_V3)
+    poly_multiply_gpu_optimized_v3_test3(a, b, ab, n_, p_);
+#elif defined(GPU_NTT_V2_FIXED)
+    poly_multiply_gpu_optimized_v2_fixed(a, b, ab, n_, p_);
+#elif defined(GPU_NTT_V2_ENHANCED)
+    poly_multiply_gpu_optimized_v2_enhanced(a, b, ab, n_, p_);
+#else
+    poly_multiply_gpu_optimized_v2(a, b, ab, n_, p_);
+#endif
 
     TIMER_END();
     ans += TIMER_ELAPSED();
