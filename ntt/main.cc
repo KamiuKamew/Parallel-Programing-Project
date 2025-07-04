@@ -6,7 +6,8 @@
 #include "src/include/pthread_simple/ntt.h"
 #include "src/include/Barrett/ntt.h"
 #include "src/include/OpenMP_Barrett/ntt.h"
-#include "src/include/MPI/ntt.h"
+// #include "src/include/MPI/ntt.h"
+#include "src/include/CUDA/ntt32_gpu.h"
 
 #include <cstring>
 #include <fstream>
@@ -113,7 +114,7 @@ int _main(int argc, char *argv[])
   // 在实现快速数论变化前, 后四个测试样例运行时间较久,
   // 推荐调试正确性时只使用输入文件 1
   T test_begin = 0;
-  T test_end = 4;
+  T test_end = 3;
   for (T i = test_begin; i <= test_end; ++i)
   {
     long double ans = 0;
@@ -126,7 +127,7 @@ int _main(int argc, char *argv[])
 
     // TODO : 将 poly_multiply 函数替换成你写的 ntt
     // poly_multiply(a, b, ab, n_, p_);
-    poly_multiply_ntt(a, b, ab, n_, p_);
+    // poly_multiply_ntt(a, b, ab, n_, p_);
     // poly_multiply_ntt_simd(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp(a, b, ab, n_, p_);
     // poly_multiply_ntt_crt(a, b, ab, n_, p_);
@@ -135,6 +136,12 @@ int _main(int argc, char *argv[])
     // poly_multiply_ntt_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_omp_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_mpi(a, b, ab, n_, p_);
+    if (p_ > (1ULL << 32))
+    {
+      std::cout << "跳过大模数测试点 p = " << p_ << std::endl;
+      continue;
+    }
+    poly_multiply_ntt_gpu32(a, b, ab, n_, p_, "basic");
 
     TIMER_END();
     ans += TIMER_ELAPSED();
