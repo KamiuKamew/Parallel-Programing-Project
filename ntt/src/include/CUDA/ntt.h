@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "../general/utils.h"
 #include "../general/op.h"
 #include <cuda_runtime.h>
@@ -18,62 +19,52 @@
     } while (0)
 
 // GPU设备函数声明
-template <typename T>
-__device__ T gpu_mont_add(T a_mont, T b_mont, T mod);
+__device__ u32 gpu_mont_add(u32 a_mont, u32 b_mont, u32 mod);
 
-template <typename T>
-__device__ T gpu_mont_sub(T a_mont, T b_mont, T mod);
+__device__ u32 gpu_mont_sub(u32 a_mont, u32 b_mont, u32 mod);
 
-template <typename T>
-__device__ T gpu_mont_mul(T a_mont, T b_mont, T mod, T neg_r_inv);
+__device__ u32 gpu_mont_mul(u32 a_mont, u32 b_mont, u32 mod, u32 neg_r_inv);
 
-template <typename T>
-__device__ T gpu_mont_reduce(uint64_t t, T mod, T neg_r_inv);
+__device__ u32 gpu_mont_reduce(uint64_t t, u32 mod, u32 neg_r_inv);
 
 // NTT核函数声明
-template <typename T>
-__global__ void ntt_forward_kernel_basic(T *a_mont, T n, T p, T *twiddle_factors, int mid_level);
+__global__ void ntt_forward_kernel_basic(u32 *a_mont, u32 n, u32 p, u32 *twiddle_factors, int mid_level);
 
-template <typename T>
-__global__ void ntt_forward_kernel_optimized(T *a_mont, T n, T p, T *twiddle_factors, int mid_level);
+__global__ void ntt_forward_kernel_optimized(u32 *a_mont, u32 n, u32 p, u32 *twiddle_factors, int mid_level);
 
-template <typename T>
-__global__ void ntt_inverse_kernel_basic(T *a_mont, T n, T p, T *twiddle_factors, int mid_level);
+__global__ void ntt_inverse_kernel_basic(u32 *a_mont, u32 n, u32 p, u32 *twiddle_factors, int mid_level);
 
-template <typename T>
-__global__ void ntt_inverse_kernel_optimized(T *a_mont, T n, T p, T *twiddle_factors, int mid_level);
+__global__ void ntt_inverse_kernel_optimized(u32 *a_mont, u32 n, u32 p, u32 *twiddle_factors, int mid_level);
 
-template <typename T>
-__global__ void pointwise_multiply_kernel(T *a_mont, T *b_mont, T *ab_mont, T n, T mod, T neg_r_inv);
+__global__ void pointwise_multiply_kernel(u32 *a_mont, u32 *b_mont, u32 *ab_mont, u32 n, u32 mod, u32 neg_r_inv);
 
 // GPU版本的多项式乘法函数
-template <typename T>
-void poly_multiply_ntt_gpu_basic(T *a, T *b, T *ab, T n, T p, T omega = 3);
+void poly_multiply_ntt_gpu_basic(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
-template <typename T>
-void poly_multiply_ntt_gpu_optimized(T *a, T *b, T *ab, T n, T p, T omega = 3);
-
-template <typename T>
-void poly_multiply_ntt_gpu(T *a, T *b, T *ab, T n, T p, T omega = 3);
+void poly_multiply_ntt_gpu(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
 // GPU 多模乘版本接口
-template <typename T>
-void poly_multiply_ntt_gpu_naive(T *a, T *b, T *ab, T n, T p, T omega = 3);
+void poly_multiply_ntt_gpu_naive(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
-template <typename T>
-void poly_multiply_ntt_gpu_mont(T *a, T *b, T *ab, T n, T p, T omega = 3);
+void poly_multiply_ntt_gpu_mont(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
-template <typename T>
-void poly_multiply_ntt_gpu_barrett(T *a, T *b, T *ab, T n, T p, T omega = 3);
+void poly_multiply_ntt_gpu_barrett(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
-template <typename T>
-void copy_to_gpu_and_expand(T *host_data, T **gpu_data, T n, T n_expanded);
+// 优化版本接口 - Lab5.tex优化策略实现
+void poly_multiply_ntt_gpu_mont_optimized(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
 
-template <typename T>
-void copy_from_gpu_and_shrink(T *gpu_data, T *host_data, T n_expanded, T n);
+void poly_multiply_ntt_gpu_naive_optimized(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
+
+void poly_multiply_ntt_gpu_barrett_optimized(u32 *a, u32 *b, u32 *ab, u32 n, u32 p, u32 omega = 3);
+
+// 旋转因子预计算函数声明 (u32版本)
+void generate_twiddle_table_u32(std::vector<u32> &table, u32 n, u32 p, u32 omega, bool inverse);
+
+void copy_to_gpu_and_expand(u32 *host_data, u32 **gpu_data, u32 n, u32 n_expanded);
+
+void copy_from_gpu_and_shrink(u32 *gpu_data, u32 *host_data, u32 n_expanded, u32 n);
 
 // 辅助函数
-template <typename T>
-void precompute_twiddle_factors_gpu(T **twiddle_factors_gpu, T n, T p, T omega_mont, bool is_inverse = false);
+void precompute_twiddle_factors_gpu(u32 **twiddle_factors_gpu, u32 n, u32 p, u32 omega_mont, bool is_inverse = false);
 
 // 模板函数的实现将在编译时包含
