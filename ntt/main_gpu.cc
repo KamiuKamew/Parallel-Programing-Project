@@ -1,13 +1,14 @@
 #include "src/include/ntt.h"
-// #include "src/include/simd/ntt.h"
 #include "src/include/OpenMP/ntt.h"
 #include "src/include/CRT/ntt.h"
 #include "src/include/pthread_crt/ntt.h"
 #include "src/include/pthread_simple/ntt.h"
 #include "src/include/Barrett/ntt.h"
 #include "src/include/OpenMP_Barrett/ntt.h"
-// #include "src/include/MPI/ntt.h"
-#include "src/include/CUDA/ntt.h"
+#include "src/include/base4/ntt-base4.h"
+#include "src/include/unified/ntt_unified_gpu.h"
+#include "src/include/general/utils.h"
+#include "src/include/config.h"
 
 #include <cstring>
 #include <fstream>
@@ -15,8 +16,19 @@
 #include <iostream>
 #include <string>
 #include <sys/time.h>
-// #include <omp.h>
-#include "src/include/config.h"
+#include <chrono>
+
+// GPU模式下的MPI处理
+#ifdef USE_CUDA
+#ifndef USE_MPI
+// 在GPU模式下，如果没有启用MPI，则提供空的MPI宏
+#define MPI_INIT(argc, argv)
+#define MPI_FINALIZE()
+#define MPI_GET_RANK(rank) int rank = 0
+#define MPI_ONLY_MAIN
+#define MPI_BARRIER()
+#endif
+#endif
 
 std::string path_read = "/nttdata/";
 std::string path_check = "/nttdata/";
@@ -128,8 +140,8 @@ int _main(int argc, char *argv[])
         memset(ab, 0, sizeof(ab));
         TIMER_START();
 
-        // Stage1优化版本测试
-        poly_multiply_ntt_gpu_stage1_mont(a, b, ab, n_, p_);
+        // GPU统一框架测试
+        poly_multiply_unified_gpu_choose(a, b, ab, n_, p_, 3, GPUModMethod::MONTGOMERY);
 
         TIMER_END();
         ans += TIMER_ELAPSED();

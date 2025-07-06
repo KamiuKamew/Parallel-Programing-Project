@@ -6,17 +6,21 @@
 #include <device_launch_parameters.h>
 #include <vector>
 
+#ifndef USE_CUDA
 #define USE_CUDA
+#endif
 
 // CUDA错误检查宏
-#define CHECK_CUDA(call)                                                       \
-  do {                                                                         \
-    cudaError_t err = call;                                                    \
-    if (err != cudaSuccess) {                                                  \
-      fprintf(stderr, "CUDA error at %s:%d: %s\n", __FILE__, __LINE__,         \
-              cudaGetErrorString(err));                                        \
-      exit(1);                                                                 \
-    }                                                                          \
+#define CHECK_CUDA(call)                                               \
+  do                                                                   \
+  {                                                                    \
+    cudaError_t err = call;                                            \
+    if (err != cudaSuccess)                                            \
+    {                                                                  \
+      fprintf(stderr, "CUDA error at %s:%d: %s\n", __FILE__, __LINE__, \
+              cudaGetErrorString(err));                                \
+      exit(1);                                                         \
+    }                                                                  \
   } while (0)
 
 // GPU设备函数声明
@@ -54,6 +58,16 @@ void poly_multiply_ntt_gpu_basic(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
 void poly_multiply_ntt_gpu(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
                            u32 omega = 3);
 
+// =============================================================================
+// 模乘模式枚举
+// =============================================================================
+enum MulMode
+{
+  MUL_NAIVE = 0,
+  MUL_MONT = 1,
+  MUL_BARRETT = 2
+};
+
 // GPU 多模乘版本接口
 void poly_multiply_ntt_gpu_naive(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
                                  u32 omega = 3);
@@ -63,6 +77,10 @@ void poly_multiply_ntt_gpu_mont(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
 
 void poly_multiply_ntt_gpu_barrett(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
                                    u32 omega = 3);
+
+template <int MODE>
+void poly_multiply_ntt_gpu_core_u32(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,
+                                    u32 omega = 3);
 
 // 优化版本接口 - Lab5.tex优化策略实现
 void poly_multiply_ntt_gpu_mont_optimized(u32 *a, u32 *b, u32 *ab, u32 n, u32 p,

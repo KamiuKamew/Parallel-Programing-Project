@@ -7,7 +7,21 @@
 #include "src/include/Barrett/ntt.h"
 #include "src/include/OpenMP_Barrett/ntt.h"
 // #include "src/include/MPI/ntt.h"
-#include "src/include/CUDA/ntt.h"
+// #include "src/include/CUDA/ntt.h"
+#include "src/include/base4/ntt-base4.h"
+#include "src/include/unified/unified.h"
+
+// GPU模式下的MPI处理
+#ifdef USE_CUDA
+#ifndef USE_MPI
+// 在GPU模式下，如果没有启用MPI，则提供空的MPI宏
+#define MPI_INIT(argc, argv)
+#define MPI_FINALIZE()
+#define MPI_GET_RANK(rank) int rank = 0
+#define MPI_ONLY_MAIN
+#define MPI_BARRIER()
+#endif
+#endif
 
 #include <cstring>
 #include <fstream>
@@ -142,7 +156,25 @@ int _main(int argc, char *argv[])
     // poly_multiply_ntt_omp_Barrett(a, b, ab, n_, p_);
     // poly_multiply_ntt_mpi(a, b, ab, n_, p_);
     // poly_multiply_ntt_gpu(a, b, ab, n_, p_); // GPU版本
-    poly_multiply_ntt_gpu_mont_optimized(a, b, ab, n_, p_);
+    // poly_multiply_ntt_gpu_mont_optimized(a, b, ab, n_, p_);
+    // poly_multiply_ntt_radix4(a, b, ab, n_, n_, p_); // 基-4 NTT版本
+    // poly_multiply_unified_naive(a, b, ab, n_, p_, 3);
+    // poly_multiply_unified_montgomery(a, b, ab, n_, p_, 3);
+    // poly_multiply_unified_barrett(a, b, ab, n_, p_, 3);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::NAIVE, ParallelMethod::SERIAL);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::MONTGOMERY, ParallelMethod::SERIAL);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::BARRETT, ParallelMethod::SERIAL);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::MONTGOMERY, ParallelMethod::PTHREAD);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::BARRETT, ParallelMethod::PTHREAD);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::NAIVE, ParallelMethod::OPENMP);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::MONTGOMERY, ParallelMethod::OPENMP);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::NAIVE, ParallelMethod::MPI);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::MONTGOMERY, ParallelMethod::MPI);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::BARRETT, ParallelMethod::MPI);
+    // GPU统一框架测试（需要CUDA环境）
+    poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::MONTGOMERY, ParallelMethod::GPU);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::NAIVE, ParallelMethod::GPU);
+    // poly_multiply_unified_choosewith(a, b, ab, n_, p_, 3, ModMethod::BARRETT, ParallelMethod::GPU);
 
     TIMER_END();
     ans += TIMER_ELAPSED();

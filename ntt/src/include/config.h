@@ -97,3 +97,11 @@
 #define CUDA_WARMUP()
 
 #endif
+
+// GPU+MPI混合编译支持
+#ifdef USE_CUDA
+#ifdef USE_MPI
+// 当同时启用CUDA和MPI时，需要特殊处理
+#define GPU_MPI_MODE
+#endif
+#endif
