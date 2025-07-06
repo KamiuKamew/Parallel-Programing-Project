@@ -1,5 +1,3 @@
-
-
 CXX = g++
 NVCC = nvcc
 CXXFLAGS = -std=c++20 -O3 -Wall -Wextra
@@ -16,10 +14,13 @@ all: main_cpu
 main_cpu: main.cc
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -DUSE_CPU_ONLY -o $@ $<
 
-main_gpu: main.cc $(INCDIR)/CUDA/ntt_gpu.o
+main_gpu: main.cc $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o
 	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
 
 $(INCDIR)/CUDA/ntt_gpu.o: $(INCDIR)/CUDA/ntt_gpu.cu
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
+
+$(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o: $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.cu
 	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
 
 perf: performance_compare.cu $(INCDIR)/CUDA/ntt_gpu.o
@@ -33,7 +34,7 @@ test_fixed: comprehensive_mod_mul_test_fixed.cu $(INCDIR)/CUDA/ntt_gpu.o
 	./test_fixed
 
 clean:
-	rm -f main_cpu main_gpu performance_compare $(INCDIR)/CUDA/ntt_gpu.o *.csv
+	rm -f main_cpu main_gpu performance_compare $(INCDIR)/CUDA/ntt_gpu.o $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o *.csv
 
 gpu-info:
 	@nvidia-smi || echo "NVIDIA GPU不可用"

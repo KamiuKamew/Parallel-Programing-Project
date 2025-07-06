@@ -21,6 +21,31 @@
 enum MulMode { OPT_MUL_NAIVE = 0, OPT_MUL_MONT = 1, OPT_MUL_BARRETT = 2 };
 
 // =============================================================================
+// 旋转因子预计算函数 - u32版本
+// =============================================================================
+void generate_twiddle_table_u32(std::vector<u32> &table, u32 n, u32 p,
+                                u32 omega, bool inverse) {
+  table.resize(n);
+  MontMod<u32> mont(p);
+  u32 omega_mont = mont.from_T(omega);
+  if (inverse)
+    omega_mont = mont.inv(omega_mont);
+  u32 one_mont = mont.from_T(1);
+
+  for (int level = 0; (1u << level) < n; ++level) {
+    u32 mid = 1u << level;
+    u32 exp = (p - 1) / (mid << 1);
+    u32 Wn_mont = mont.pow(omega_mont, exp);
+    u32 w = one_mont;
+    u32 offset = mid - 1;
+    for (u32 k = 0; k < mid; ++k) {
+      table[offset + k] = w;
+      w = mont.mul(w, Wn_mont);
+    }
+  }
+}
+
+// =============================================================================
 // 统一的GPU设备函数 - u32版本
 // =============================================================================
 __device__ u32 gpu_opt_mont_reduce(u64 t, u32 mod, u32 neg_r_inv) {

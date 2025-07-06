@@ -15,18 +15,62 @@ all: main_cpu main_gpu
 # 优化版本目标
 optimized: main_gpu_optimized
 
+# Stage 1优化版本目标
+stage1: main_gpu_stage1
+
+# Stage 2优化版本目标
+stage2: main_gpu_stage2
+
+# Stage 3优化版本目标
+stage3: main_gpu_stage3
+
+# 性能对比测试目标
+performance_comparison: main_performance_comparison
+
 main_cpu: main.cc
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -DUSE_CPU_ONLY -o $@ $<
 
-main_gpu: main.cc $(INCDIR)/CUDA/ntt_gpu.o
+main_gpu: main.cc $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o
 	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
 
 # 优化版本目标
 main_gpu_optimized: main_optimized.cc $(INCDIR)/CUDA/ntt_gpu.o
 	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
 
+# Stage 1优化版本目标
+main_gpu_stage1: main_stage1.cc $(INCDIR)/CUDA/ntt_gpu_stage1_optimized.o
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
+
+# Stage 2优化版本目标
+main_gpu_stage2: main_stage2.cc $(INCDIR)/CUDA/ntt_gpu_stage2_optimized.o
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
+
+# Stage 3优化版本目标
+main_gpu_stage3: main_stage3.cc $(INCDIR)/CUDA/ntt_gpu_stage3_optimized.o
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
+
+# 性能对比测试目标
+main_performance_comparison: main_performance_comparison.cc $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o $(INCDIR)/CUDA/ntt_gpu_stage1_optimized.o $(INCDIR)/CUDA/ntt_gpu_stage2_optimized.o $(INCDIR)/CUDA/ntt_gpu_stage3_optimized.o
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -o $@ $^
+
 # 基础GPU对象文件
 $(INCDIR)/CUDA/ntt_gpu.o: $(INCDIR)/CUDA/ntt_gpu.cu
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
+
+# Lab5优化版本GPU对象文件
+$(INCDIR)/CUDA/ntt_gpu_lab5_optimized.o: $(INCDIR)/CUDA/ntt_gpu_lab5_optimized.cu
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
+
+# Stage 1优化版本GPU对象文件
+$(INCDIR)/CUDA/ntt_gpu_stage1_optimized.o: $(INCDIR)/CUDA/ntt_gpu_stage1_optimized.cu
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
+
+# Stage 2优化版本GPU对象文件
+$(INCDIR)/CUDA/ntt_gpu_stage2_optimized.o: $(INCDIR)/CUDA/ntt_gpu_stage2_optimized.cu
+	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
+
+# Stage 3优化版本GPU对象文件
+$(INCDIR)/CUDA/ntt_gpu_stage3_optimized.o: $(INCDIR)/CUDA/ntt_gpu_stage3_optimized.cu
 	$(NVCC) $(NVCCFLAGS) $(INCLUDES) -c -o $@ $<
 
 # 测试优化效果

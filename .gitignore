@@ -11,6 +11,8 @@ ntt/files/*.out
 ntt/files/.*/
 output/
 
+ntt/**/*.o
+
 FlameGraph/
 
 submit/

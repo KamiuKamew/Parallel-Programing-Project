@@ -83,3 +83,17 @@
 #define TIMER_ELAPSED() (std::chrono::duration<double, std::ratio<1, 1000>>(end_time - start_time).count()) // 毫秒
 
 #endif
+
+#ifdef USE_CUDA
+
+#define CUDA_WARMUP()      \
+    int *dummy;            \
+    cudaMalloc(&dummy, 1); \
+    cudaFree(dummy);       \
+    cudaDeviceSynchronize();
+
+#else
+
+#define CUDA_WARMUP()
+
+#endif
