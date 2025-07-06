@@ -83,3 +83,25 @@
 #define TIMER_ELAPSED() (std::chrono::duration<double, std::ratio<1, 1000>>(end_time - start_time).count()) // 毫秒
 
 #endif
+
+#ifdef USE_CUDA
+
+#define CUDA_WARMUP()      \
+    int *dummy;            \
+    cudaMalloc(&dummy, 1); \
+    cudaFree(dummy);       \
+    cudaDeviceSynchronize();
+
+#else
+
+#define CUDA_WARMUP()
+
+#endif
+
+// GPU+MPI混合编译支持
+#ifdef USE_CUDA
+#ifdef USE_MPI
+// 当同时启用CUDA和MPI时，需要特殊处理
+#define GPU_MPI_MODE
+#endif
+#endif

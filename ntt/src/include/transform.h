@@ -42,15 +42,39 @@ inline void ntt_forward(T *a, T n, T p, T omega)
  * @param p 模数
  * @param omega 原根
  */
+// template <typename T>
+// inline void ntt_inverse(T *a, T n, T p, T omega)
+// {
+//   Mod<T> mod(p);
+
+//   ntt_forward(a, n, p, mod.inv(omega));
+
+//   for (T i = 0; i < n; ++i)
+//     a[i] = mod.mul(a[i], mod.inv(n)); // 最后每个元素乘以 n 的逆元
+// }
 template <typename T>
-inline void ntt_inverse(T *a, T n, T p, T omega)
+void ntt_inverse(T *a, T n, T p, T omega)
 {
   Mod<T> mod(p);
-
-  ntt_forward(a, n, p, mod.inv(omega));
-
+  T omega_inv = mod.inv(omega);
+  for (T mid = n >> 1; mid; mid >>= 1)
+  {
+    T Wn = mod.pow(omega_inv, (p - 1) / (mid << 1));
+    for (T j = 0; j < n; j += mid << 1)
+    {
+      T w = 1;
+      for (T k = 0; k < mid; ++k)
+      {
+        T x = a[j + k], y = a[j + k + mid];
+        a[j + k] = mod.add(x, y);
+        a[j + k + mid] = mod.mul(w, mod.sub(x, y));
+        w = mod.mul(w, Wn);
+      }
+    }
+  }
+  T inv_n = mod.inv(n);
   for (T i = 0; i < n; ++i)
-    a[i] = mod.mul(a[i], mod.inv(n)); // 最后每个元素乘以 n 的逆元
+    a[i] = mod.mul(a[i], inv_n);
 }
 
 /**

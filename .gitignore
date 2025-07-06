@@ -11,6 +11,11 @@ ntt/files/*.out
 ntt/files/.*/
 output/
 
+ntt/**/*.o
+
 FlameGraph/
 
 submit*/
+
+PROJECT_SUMMARY.md
+TODO

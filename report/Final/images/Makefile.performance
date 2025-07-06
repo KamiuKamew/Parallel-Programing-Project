@@ -1,0 +1,51 @@
+CXX = g++
+NVCC = nvcc
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -march=native
+INCLUDES = -I./src/include -I./src/include/unified -I./src/include/general -I./src/include/CUDA
+
+# 并行库支持
+OPENMP_FLAGS = -fopenmp
+CUDA_FLAGS = -I/usr/local/cuda/include -L/usr/local/cuda/lib64 -lcudart -lcuda
+MPI_FLAGS = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
+
+# CUDA源文件
+CUDA_SRCS = src/include/CUDA/ntt_gpu.cu
+CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
+
+# 目标文件
+TARGET = performance_test
+SOURCES = performance_test.cpp
+
+# 默认目标
+all: $(TARGET)
+
+# 编译CUDA对象文件
+src/include/CUDA/%.o: src/include/CUDA/%.cu
+	$(NVCC) -c $< -o $@ -Xcompiler "-fPIC $(CXXFLAGS)" $(INCLUDES)
+
+# 编译性能测试程序
+$(TARGET): $(SOURCES) $(CUDA_OBJS)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(OPENMP_FLAGS) -o $@ $^ $(MPI_FLAGS) -L/usr/local/cuda/lib64 -lcudart -lcuda
+
+# 清理
+clean:
+	rm -f $(TARGET) performance_results.csv $(CUDA_OBJS)
+
+# 运行测试
+test: $(TARGET)
+	./$(TARGET)
+
+# 运行MPI测试
+test_mpi: $(TARGET)
+	mpirun -np 4 ./$(TARGET)
+
+# 帮助信息
+help:
+	@echo "可用目标:"
+	@echo "  all      - 编译性能测试程序"
+	@echo "  clean    - 清理编译文件"
+	@echo "  test     - 运行串行测试"
+	@echo "  test_mpi - 运行MPI测试"
+	@echo "  help     - 显示此帮助信息"
+
+.PHONY: all clean test test_mpi help 
